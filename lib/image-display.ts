@@ -2,6 +2,7 @@ type Dictionary = Record<string, unknown>;
 
 const ABSOLUTE_HTTP_REGEX = /^https?:\/\//i;
 const PROTOCOL_RELATIVE_REGEX = /^\/\//;
+const MALFORMED_ABSOLUTE_HTTP_REGEX = /^(https?):\/(?!\/)/i;
 const LEADING_SLASH_ABSOLUTE_REGEX = /^\/+https?:\/\//i;
 const UNSAFE_SCHEME_REGEX = /^[a-z][a-z0-9+.-]*:/i;
 const BLOB_SCHEME_REGEX = /^blob:/i;
@@ -172,6 +173,11 @@ export function normalizeImageUrl(input: unknown): string {
     return '';
   }
   value = value.replace(/\\/g, '/');
+
+  // Recover malformed absolute URLs such as `https:/domain/path`.
+  if (MALFORMED_ABSOLUTE_HTTP_REGEX.test(value)) {
+    value = value.replace(MALFORMED_ABSOLUTE_HTTP_REGEX, '$1://');
+  }
 
   if (BLOB_SCHEME_REGEX.test(value) || DATA_IMAGE_SCHEME_REGEX.test(value)) {
     return value;

@@ -40,6 +40,7 @@ type MediaRecord = {
 
 const HOSTINGER_PUBLIC_UPLOAD_PREFIX = '/public/uploads/';
 const HOSTINGER_PRIVATE_UPLOAD_PREFIX = '/storage/uploads/';
+const MALFORMED_ABSOLUTE_HTTP_REGEX = /^(https?):\/(?!\/)/i;
 
 function sanitizeText(value: unknown, maxLength = 300) {
   if (typeof value !== 'string') {
@@ -49,9 +50,13 @@ function sanitizeText(value: unknown, maxLength = 300) {
 }
 
 function normalizeMediaUrl(value: string) {
-  const raw = sanitizeText(value, 2000);
+  let raw = sanitizeText(value, 2000);
   if (!raw) {
     return '';
+  }
+
+  if (MALFORMED_ABSOLUTE_HTTP_REGEX.test(raw)) {
+    raw = raw.replace(MALFORMED_ABSOLUTE_HTTP_REGEX, '$1://');
   }
 
   if (raw.startsWith('/uploads/') || raw.startsWith('/api/upload/')) {

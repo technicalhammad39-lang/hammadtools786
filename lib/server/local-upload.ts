@@ -524,7 +524,8 @@ export function getPublicFilePath(folder: UploadFolder, fileName: string) {
     return new URL(`${folder}/${fileName}`, base).toString();
   }
 
-  return `${publicBase}/${folder}/${fileName}`.replace(/\/+/g, '/');
+  const normalizedBase = publicBase.replace(/\/+$/, '') || '/uploads';
+  return `${normalizedBase}/${folder}/${fileName}`;
 }
 
 export function getProtectedMediaPath(mediaId: string) {
