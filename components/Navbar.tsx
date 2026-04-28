@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -14,6 +14,18 @@ const Navbar = () => {
   const { user, profile } = useAuth();
   const { totalItems, setIsCartOpen } = useCart();
   const isAdminRoute = pathname.startsWith('/admin');
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.setAttribute('data-scroll-locked', 'true');
+      return;
+    }
+    document.body.removeAttribute('data-scroll-locked');
+
+    return () => {
+      document.body.removeAttribute('data-scroll-locked');
+    };
+  }, [isOpen]);
 
   const desktopNavLinks = [
     { name: 'Home', href: '/' },
@@ -119,9 +131,12 @@ const Navbar = () => {
             </button>
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-brand-text/40 p-2"
+              data-open={isOpen ? 'true' : 'false'}
+              className="mobile-menu-toggle text-brand-text/40 p-2 relative w-10 h-10"
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
             >
-              {isOpen ? <X /> : <Menu />}
+              <Menu className="mobile-menu-icon mobile-menu-icon-open absolute inset-0 m-auto" />
+              <X className="mobile-menu-icon mobile-menu-icon-close absolute inset-0 m-auto" />
             </button>
           </div>
         </div>
@@ -132,18 +147,19 @@ const Navbar = () => {
         data-open={isOpen ? 'true' : 'false'}
         className="mobile-nav-panel xl:hidden bg-gradient-to-b from-[#0A0A0A] to-[#121212] border-t border-white/5 overflow-hidden shadow-2xl"
       >
-        <div className="px-4 pt-2 pb-10 space-y-1">
-          {mobileNavLinks.map((link) => (
+        <div className="mobile-nav-panel-content px-4 pt-2 pb-10 space-y-1">
+          {mobileNavLinks.map((link, index) => (
             <Link
               key={link.name}
               href={link.href}
               onClick={() => setIsOpen(false)}
-              className={`block px-3 py-4 text-lg font-black uppercase tracking-[0.16em] ${pathname === link.href ? 'text-primary' : 'text-brand-text/40'}`}
+              style={{ ['--nav-item-index' as string]: String(index + 1) }}
+              className={`mobile-nav-link block px-3 py-4 text-lg font-black uppercase tracking-[0.16em] ${pathname === link.href ? 'text-primary' : 'text-brand-text/40'}`}
             >
               {link.name}
             </Link>
           ))}
-          <div className="pt-6 border-t border-white/5 mx-3">
+          <div style={{ ['--nav-item-index' as string]: '8' }} className="mobile-nav-link pt-6 border-t border-white/5 mx-3">
             {user ? (
               <div className="flex items-center justify-between">
                 <Link href="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center space-x-3 text-brand-text/40 font-black uppercase tracking-widest text-sm">

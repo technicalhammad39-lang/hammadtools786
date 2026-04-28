@@ -20,6 +20,7 @@ import {
   getCustomPasswordResetUrl,
   getFirebasePublicEnvErrorMessage,
   hasFirebasePublicEnv,
+  logFirebaseConfigFallback,
   logMissingFirebasePublicEnv,
 } from '@/lib/firebase-public-env';
 
@@ -68,6 +69,7 @@ async function getAuthClient() {
     logMissingFirebasePublicEnv('auth-context');
     throw new Error(getFirebasePublicEnvErrorMessage());
   }
+  logFirebaseConfigFallback('auth-context');
 
   if (!authClientPromise) {
     authClientPromise = import('@/firebase-auth').then((module) => ({
@@ -374,7 +376,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await sendPasswordResetEmail(auth, email);
       }
     } catch (error) {
-      console.error('Password reset request failed:', error);
+      console.error('Password reset request failed:', {
+        error,
+        code: (error as any)?.code || 'unknown',
+      });
       if (error instanceof Error && error.message === getFirebasePublicEnvErrorMessage()) {
         throw error;
       }

@@ -62,14 +62,18 @@ export default function ForgotPasswordClient() {
         setFeedback('Please enter a valid email address.');
         setFeedbackType('error');
         toast.error('Invalid email', 'Please enter a valid email address.');
+      } else if (normalized.includes('if this email exists')) {
+        setFeedback(GENERIC_RESET_FEEDBACK);
+        setFeedbackType('success');
+        toast.success('Request submitted', GENERIC_RESET_FEEDBACK);
       } else if (normalized.includes('temporarily unavailable')) {
         setFeedback('Password reset is temporarily unavailable. Please try again shortly.');
         setFeedbackType('error');
         toast.error('Request failed', 'Password reset is temporarily unavailable right now.');
       } else {
-        setFeedback(GENERIC_RESET_FEEDBACK);
-        setFeedbackType('success');
-        toast.success('Request submitted', GENERIC_RESET_FEEDBACK);
+        setFeedback(message);
+        setFeedbackType('error');
+        toast.error('Request failed', message);
       }
     }
 

@@ -48,6 +48,7 @@ const PartnerSection = () => {
             <div
               key={partner.name}
               data-gsap-reveal="gsap"
+              data-gsap-reveal-style="soft-card"
               className="group relative"
               style={{ transitionDelay: `${Math.min(index * 70, 210)}ms` }}
             >

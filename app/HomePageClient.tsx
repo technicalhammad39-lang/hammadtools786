@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Hero from '@/components/Hero';
 import BackToTopButton from '@/components/BackToTopButton';
 import { Globe, Award, Zap, Shield, Headphones, Layers, HelpCircle, ChevronDown } from 'lucide-react';
+import Marquee from 'react-fast-marquee';
 
 const ServicesSection = dynamic(() => import('@/components/ServicesSection'));
 const PartnerSection = dynamic(() => import('@/components/PartnerSection'));
@@ -32,27 +33,25 @@ export default function Home() {
         data-gsap-reveal="gsap"
         className="py-5 md:py-10 border-y border-white/5 bg-black/40 backdrop-blur-xl relative z-10"
       >
-        <div className="home-logo-marquee">
-          <div className="home-logo-marquee-track">
-            {[...BRAND_LOGOS, ...BRAND_LOGOS].map((platform, index) => (
-              <div key={`${platform.name}-${index}`} className="flex items-center space-x-1.5 md:space-x-3 mx-5 md:mx-14 group shrink-0">
-                <div
-                  className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full"
-                  style={{ backgroundColor: platform.color }}
-                />
-                <span className="text-base sm:text-xl md:text-2xl font-black text-brand-text/40 group-hover:text-brand-text transition-colors duration-300 uppercase italic whitespace-nowrap">
-                  {platform.name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Marquee gradient={true} gradientColor="#000000" gradientWidth={100} speed={38} pauseOnHover={false}>
+          {[...BRAND_LOGOS, ...BRAND_LOGOS].map((platform, index) => (
+            <div key={`${platform.name}-${index}`} className="flex items-center space-x-1.5 md:space-x-3 mx-5 md:mx-14 group shrink-0">
+              <div
+                className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full"
+                style={{ backgroundColor: platform.color }}
+              />
+              <span className="text-base sm:text-xl md:text-2xl font-black text-brand-text/40 group-hover:text-brand-text transition-colors duration-300 uppercase italic whitespace-nowrap">
+                {platform.name}
+              </span>
+            </div>
+          ))}
+        </Marquee>
       </section>
 
       <ServicesSection />
       
       {/* Why Choose Us Section - Premium Cards */}
-      <section className="py-12 md:py-32 relative overflow-hidden">
+      <section data-gsap-reveal="gsap" className="py-12 md:py-32 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/5 -z-10" />
         
         <div className="site-container">
@@ -110,6 +109,7 @@ export default function Home() {
               <div
                 key={feature.title}
                 data-gsap-reveal="gsap"
+                data-gsap-reveal-style="soft-card"
                 className={`rounded-2xl md:rounded-[2rem] p-4 md:p-10 border border-white/40 group relative overflow-hidden transition-all duration-500 perspective-1000 flex flex-row items-center md:items-start md:flex-col gap-4 md:gap-0 shadow-[0_20px_50px_rgba(255,214,0,0.18)] ${
                   isWhiteCard
                     ? 'bg-[linear-gradient(135deg,#FFFFFF_0%,#FFF9E6_55%,#FFFFFF_100%)]'
@@ -144,7 +144,7 @@ export default function Home() {
       </div>
 
       {/* FAQ Section with Animated Icons */}
-      <section className="pt-8 pb-14 md:pt-16 md:pb-28 relative overflow-hidden">
+      <section data-gsap-reveal="gsap" className="pt-8 pb-14 md:pt-16 md:pb-28 relative overflow-hidden">
         <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[70vw] h-[70vw] max-w-[780px] max-h-[780px] rounded-full bg-primary/8 blur-[140px] -z-10 pointer-events-none" />
         <div className="absolute -bottom-24 left-[8%] w-56 h-56 rounded-full bg-secondary/12 blur-[90px] -z-10 pointer-events-none" />
         <div className="absolute -top-20 right-[8%] w-56 h-56 rounded-full bg-primary/12 blur-[90px] -z-10 pointer-events-none" />

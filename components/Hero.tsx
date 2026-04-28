@@ -12,7 +12,6 @@ const LONGEST_HERO_PHRASE = HERO_PHRASES.reduce((longest, phrase) =>
 
 const Hero = () => {
   const [showDesktopVideo, setShowDesktopVideo] = React.useState(false);
-  const [reduceMotion, setReduceMotion] = React.useState(false);
   const [activePhraseIndex, setActivePhraseIndex] = React.useState(0);
   const [typedPhrase, setTypedPhrase] = React.useState('');
   const [isDeletingPhrase, setIsDeletingPhrase] = React.useState(false);
@@ -25,38 +24,16 @@ const Hero = () => {
 
   React.useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
-    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => {
-      const navigatorInfo = navigator as Navigator & {
-        connection?: {
-          saveData?: boolean;
-          effectiveType?: string;
-        };
-      };
-      const saveData = navigatorInfo.connection?.saveData === true;
-      const effectiveType = navigatorInfo.connection?.effectiveType || '';
-      const isVerySlowNetwork = effectiveType === 'slow-2g' || effectiveType === '2g';
-      const hasEnoughCpu = (navigator.hardwareConcurrency || 4) >= 6;
-      setShowDesktopVideo(mediaQuery.matches && hasEnoughCpu && !saveData && !isVerySlowNetwork);
-    };
-    const syncReducedMotion = () => setReduceMotion(reducedMotionQuery.matches);
+    const sync = () => setShowDesktopVideo(mediaQuery.matches);
     sync();
-    syncReducedMotion();
 
     mediaQuery.addEventListener('change', sync);
-    reducedMotionQuery.addEventListener('change', syncReducedMotion);
     return () => {
       mediaQuery.removeEventListener('change', sync);
-      reducedMotionQuery.removeEventListener('change', syncReducedMotion);
     };
   }, []);
 
   React.useEffect(() => {
-    if (reduceMotion) {
-      setTypedPhrase(HERO_PHRASES[0] || '');
-      return;
-    }
-
     const currentPhrase = HERO_PHRASES[activePhraseIndex] || '';
     const phraseComplete = !isDeletingPhrase && typedPhrase === currentPhrase;
     const phraseCleared = isDeletingPhrase && typedPhrase.length === 0;
@@ -80,7 +57,7 @@ const Hero = () => {
     }, delay);
 
     return () => window.clearTimeout(timer);
-  }, [activePhraseIndex, isDeletingPhrase, typedPhrase, reduceMotion]);
+  }, [activePhraseIndex, isDeletingPhrase, typedPhrase]);
 
   return (
     <section className="relative min-h-[70svh] sm:min-h-[76svh] lg:min-h-[88dvh] flex flex-col items-center justify-center pt-[calc(var(--promo-ticker-height)+var(--navbar-height)+0.5rem)] sm:pt-[calc(var(--promo-ticker-height)+var(--navbar-height)+0.8rem)] lg:pt-[calc(var(--promo-ticker-height)+var(--navbar-height)+1rem)] pb-3 sm:pb-5 lg:pb-2 overflow-hidden w-full">

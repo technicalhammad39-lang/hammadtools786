@@ -65,7 +65,24 @@ export function getSafeAuthErrorMessage(error: unknown, action: AuthAction = 'ge
     if (code.includes('invalid-email')) {
       return 'Please enter a valid email address.';
     }
-    return 'If this email exists, a password reset link has been sent.';
+    if (code.includes('user-not-found')) {
+      return 'If this email exists, a password reset link has been sent.';
+    }
+    if (code.includes('too-many-requests')) {
+      return 'Too many reset attempts. Please wait a few minutes and try again.';
+    }
+    if (code.includes('network-request-failed')) {
+      return 'Network issue detected. Please check your connection and try again.';
+    }
+    if (
+      code.includes('operation-not-allowed') ||
+      code.includes('invalid-continue-uri') ||
+      code.includes('unauthorized-continue-uri') ||
+      code.includes('missing-continue-uri')
+    ) {
+      return 'Password reset email service is misconfigured. Please contact support.';
+    }
+    return 'Unable to send reset email right now. Please try again.';
   }
 
   if (action === 'logout') {

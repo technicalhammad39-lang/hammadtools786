@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, ShoppingBag, Trash2, ArrowRight, CreditCard } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
@@ -13,8 +13,31 @@ const CartDrawer = () => {
   const { cart, removeFromCart, totalPrice, isCartOpen, setIsCartOpen, totalItems } = useCart();
   const { user } = useAuth();
   const router = useRouter();
+  const [shouldRender, setShouldRender] = useState(isCartOpen);
 
-  if (!isCartOpen) {
+  useEffect(() => {
+    if (isCartOpen) {
+      const openTimeout = window.setTimeout(() => {
+        setShouldRender(true);
+      }, 0);
+      document.body.setAttribute('data-scroll-locked', 'true');
+      return () => {
+        window.clearTimeout(openTimeout);
+      };
+    }
+
+    const timeout = window.setTimeout(() => {
+      setShouldRender(false);
+    }, 280);
+    document.body.removeAttribute('data-scroll-locked');
+
+    return () => {
+      window.clearTimeout(timeout);
+      document.body.removeAttribute('data-scroll-locked');
+    };
+  }, [isCartOpen]);
+
+  if (!shouldRender) {
     return null;
   }
 
@@ -22,12 +45,14 @@ const CartDrawer = () => {
     <>
       <div
         onClick={() => setIsCartOpen(false)}
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
+        data-open={isCartOpen ? 'true' : 'false'}
+        className="cart-drawer-overlay fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
         data-lenis-prevent
       />
 
       <div
-        className="fixed top-0 right-0 h-full w-full max-w-md bg-brand-bg border-l border-white/10 z-[101] shadow-2xl flex flex-col"
+        data-open={isCartOpen ? 'true' : 'false'}
+        className="cart-drawer-panel fixed top-0 right-0 h-full w-full max-w-md bg-brand-bg border-l border-white/10 z-[101] shadow-2xl flex flex-col"
         data-lenis-prevent
       >
         <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/20">

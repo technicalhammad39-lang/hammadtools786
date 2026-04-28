@@ -67,10 +67,6 @@ export default function LenisProvider() {
       clearLenisClasses();
       return;
     }
-    if (window.matchMedia('(max-width: 767px)').matches) {
-      clearLenisClasses();
-      return;
-    }
 
     gsap.registerPlugin(ScrollTrigger);
 
@@ -81,10 +77,10 @@ export default function LenisProvider() {
       stopInertiaOnNavigate: true,
       allowNestedScroll: true,
       syncTouch: true,
-      duration: 1.6,
+      duration: 1.35,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      wheelMultiplier: 1.08,
-      touchMultiplier: 1.25,
+      wheelMultiplier: 1.03,
+      touchMultiplier: 1.08,
       prevent: (node) => {
         if (!(node instanceof HTMLElement)) {
           return false;

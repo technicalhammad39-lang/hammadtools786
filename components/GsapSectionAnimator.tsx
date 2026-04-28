@@ -52,21 +52,78 @@ function isVisibleElement(element: HTMLElement) {
 
 function collectAnimationTargets(main: HTMLElement) {
   const explicit = Array.from(main.querySelectorAll<HTMLElement>('[data-gsap-reveal="gsap"]'));
+  const implicit = Array.from(main.querySelectorAll<HTMLElement>('section, .glass, [data-gsap-auto="true"]'));
 
   const uniqueTargets: HTMLElement[] = [];
   const seen = new Set<HTMLElement>();
 
-  for (const candidate of explicit) {
+  for (const candidate of [...explicit, ...implicit]) {
     if (seen.has(candidate)) {
       continue;
     }
+
+    if (
+      !candidate.hasAttribute('data-gsap-reveal') &&
+      candidate.closest('[data-gsap-reveal="gsap"]') &&
+      !candidate.matches('[data-gsap-reveal="gsap"]')
+    ) {
+      continue;
+    }
+
     seen.add(candidate);
     if (isVisibleElement(candidate)) {
       uniqueTargets.push(candidate);
     }
   }
 
-  return uniqueTargets;
+  return uniqueTargets.slice(0, 120);
+}
+
+function hasAnimated(target: HTMLElement) {
+  return target.dataset.gsapAnimated === 'true';
+}
+
+function markAnimated(target: HTMLElement) {
+  target.dataset.gsapAnimated = 'true';
+}
+
+type RevealConfig = {
+  from: gsap.TweenVars;
+  to: gsap.TweenVars;
+  start: string;
+};
+
+function buildRevealConfig(target: HTMLElement, isMobile: boolean, index: number, isExplicit: boolean): RevealConfig {
+  const style = target.getAttribute('data-gsap-reveal-style');
+  const start = target.getAttribute('data-gsap-start') || (isMobile ? 'top 94%' : 'top 88%');
+  const baseDelay = Math.min(index * 0.022, 0.18);
+
+  if (style === 'soft-card') {
+    return {
+      from: { autoAlpha: 0, y: isMobile ? 16 : 24, scale: 0.985 },
+      to: {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        duration: isMobile ? 0.5 : 0.62,
+        ease: 'power3.out',
+        delay: baseDelay,
+      },
+      start,
+    };
+  }
+
+  return {
+    from: { autoAlpha: 0, y: isExplicit ? (isMobile ? 14 : 28) : (isMobile ? 10 : 18) },
+    to: {
+      autoAlpha: 1,
+      y: 0,
+      duration: isExplicit ? (isMobile ? 0.5 : 0.65) : (isMobile ? 0.42 : 0.52),
+      ease: 'power2.out',
+      delay: baseDelay,
+    },
+    start,
+  };
 }
 
 export default function GsapSectionAnimator() {
@@ -78,9 +135,6 @@ export default function GsapSectionAnimator() {
         return;
       }
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        return;
-      }
-      if (window.matchMedia('(max-width: 767px)').matches) {
         return;
       }
 
@@ -96,35 +150,59 @@ export default function GsapSectionAnimator() {
         return;
       }
 
-      gsap.set(targets, { willChange: 'transform, opacity' });
+      const animateBatch = () => {
+        const nextTargets = collectAnimationTargets(main).filter((target) => !hasAnimated(target));
+        if (!nextTargets.length) {
+          return;
+        }
 
-      targets.forEach((target, index) => {
-        const immediate = target.getAttribute('data-gsap-immediate') === 'true';
-        gsap.fromTo(
-          target,
-          { autoAlpha: 0, y: 28 },
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.65,
-            ease: 'power2.out',
-            delay: Math.min(index * 0.03, 0.2),
-            clearProps: 'willChange',
-            ...(immediate
-              ? {}
-              : {
-                  scrollTrigger: {
-                    trigger: target,
-                    start: 'top 88%',
-                    once: true,
-                    fastScrollEnd: true,
-                  },
-                }),
-          }
-        );
+        gsap.set(nextTargets, { willChange: 'transform, opacity' });
+
+        const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
+        nextTargets.forEach((target, index) => {
+          markAnimated(target);
+          const immediate = target.getAttribute('data-gsap-immediate') === 'true';
+          const isExplicit = target.hasAttribute('data-gsap-reveal');
+          const config = buildRevealConfig(target, isMobile, index, isExplicit);
+          gsap.fromTo(
+            target,
+            config.from,
+            {
+              ...config.to,
+              clearProps: 'willChange',
+              ...(immediate
+                ? {}
+                : {
+                    scrollTrigger: {
+                      trigger: target,
+                      start: config.start,
+                      once: true,
+                      fastScrollEnd: true,
+                    },
+                  }),
+            }
+          );
+        });
+      };
+
+      animateBatch();
+
+      const rerunOne = window.setTimeout(animateBatch, 260);
+      const rerunTwo = window.setTimeout(animateBatch, 900);
+
+      const observer = new MutationObserver(() => {
+        animateBatch();
       });
+      observer.observe(main, { childList: true, subtree: true });
 
       ScrollTrigger.refresh();
+
+      return () => {
+        window.clearTimeout(rerunOne);
+        window.clearTimeout(rerunTwo);
+        observer.disconnect();
+      };
     },
     { dependencies: [pathname], revertOnUpdate: true }
   );

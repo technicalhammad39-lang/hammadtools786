@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(siteUrl),
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
   },
 };
 

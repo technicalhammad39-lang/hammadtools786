@@ -3,10 +3,12 @@ import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import {
   firebaseClientConfig,
   firestoreDatabaseId,
+  logFirebaseConfigFallback,
   logMissingFirebasePublicEnv,
 } from '@/lib/firebase-public-env';
 
 logMissingFirebasePublicEnv('firebase-client');
+logFirebaseConfigFallback('firebase-client');
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseClientConfig);
 export const db = firestoreDatabaseId ? getFirestore(app, firestoreDatabaseId) : getFirestore(app);

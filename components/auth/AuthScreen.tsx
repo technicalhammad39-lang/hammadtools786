@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, Lock, Mail, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -90,6 +91,17 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
             <p className="mt-5 text-base text-brand-text/70 leading-relaxed max-w-md">
               Login to manage orders, uploads, and premium subscriptions with a faster dashboard workflow.
             </p>
+          </div>
+
+          <div className="mt-8 mb-7 relative overflow-hidden rounded-[1.8rem] border border-primary/20 bg-black/20 shadow-2xl min-h-[230px]">
+            <Image
+              src="/login-left.jpg"
+              alt="Secure account access preview"
+              fill
+              priority={mode === 'login'}
+              className="object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/35" />
           </div>
 
           <div className="space-y-3">
