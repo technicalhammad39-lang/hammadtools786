@@ -15,6 +15,8 @@ import LenisProvider from '@/components/LenisProvider';
 import GsapSectionAnimator from '@/components/GsapSectionAnimator';
 import ChunkLoadRecovery from '@/components/ChunkLoadRecovery';
 import GlobalPromoTicker from '@/components/GlobalPromoTicker';
+import EngagementPrompt from '@/components/EngagementPrompt';
+import PushNotificationBootstrap from '@/components/PushNotificationBootstrap';
 import { CORE_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, createPageMetadata, getSiteUrl } from '@/lib/seo';
 
 const brandFont = BrandFont({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700', '800'] });
@@ -84,9 +86,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <LenisProvider />
                   <GsapSectionAnimator />
                   <ChunkLoadRecovery />
+                  <PushNotificationBootstrap />
                   <GlobalPromoTicker />
                   <Navbar />
                   <UserOrderTicker />
+                  <EngagementPrompt />
                   <CartDrawer />
                   <main className="flex-grow">
                     {children}

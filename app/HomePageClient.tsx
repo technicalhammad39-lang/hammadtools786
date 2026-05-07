@@ -4,7 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import Hero from '@/components/Hero';
 import BackToTopButton from '@/components/BackToTopButton';
-import { Globe, Award, Zap, Shield, Headphones, Layers, HelpCircle, ChevronDown } from 'lucide-react';
+import { Globe, Award, Zap, Shield, Headphones, Layers, ChevronDown } from 'lucide-react';
 import Marquee from 'react-fast-marquee';
 
 const ServicesSection = dynamic(() => import('@/components/ServicesSection'));
@@ -143,36 +143,9 @@ export default function Home() {
         <Testimonials />
       </div>
 
-      {/* FAQ Section with Animated Icons */}
-      <section data-gsap-reveal="gsap" className="pt-8 pb-14 md:pt-16 md:pb-28 relative overflow-hidden">
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[70vw] h-[70vw] max-w-[780px] max-h-[780px] rounded-full bg-primary/8 blur-[140px] -z-10 pointer-events-none" />
-        <div className="absolute -bottom-24 left-[8%] w-56 h-56 rounded-full bg-secondary/12 blur-[90px] -z-10 pointer-events-none" />
-        <div className="absolute -top-20 right-[8%] w-56 h-56 rounded-full bg-primary/12 blur-[90px] -z-10 pointer-events-none" />
-
-        {/* Large Background Question Marks */}
-        <div className="absolute -left-32 top-0 opacity-[0.05] -z-10 pointer-events-none faq-ambient-large-a">
-          <HelpCircle className="w-[800px] h-[800px] text-primary" strokeWidth={0.5} />
-        </div>
-        
-        <div className="absolute -right-32 bottom-0 opacity-[0.05] -z-10 pointer-events-none faq-ambient-large-b">
-          <HelpCircle className="w-[800px] h-[800px] text-secondary" strokeWidth={0.5} />
-        </div>
-
-        {/* Extra floating icons for detail */}
-        <>
-          <div className="absolute left-[10%] bottom-[20%] opacity-[0.1] -z-10 faq-ambient-small-a">
-            <HelpCircle className="w-24 h-24 text-primary" strokeWidth={1} />
-          </div>
-
-          <div className="absolute right-[10%] top-[20%] opacity-[0.1] -z-10 faq-ambient-small-b">
-            <HelpCircle className="w-32 h-32 text-secondary" strokeWidth={1} />
-          </div>
-        </>
-
-        <div
-          data-gsap-reveal="gsap"
-          className="site-container"
-        >
+      {/* FAQ Section */}
+      <section data-gsap-reveal="gsap" className="pt-8 pb-14 md:pt-16 md:pb-28 relative bg-[#0D0D0D] border-t border-white/5">
+        <div className="site-container">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10 md:mb-16">
               <h2 className="text-4xl md:text-7xl font-black mb-3 md:mb-4 text-brand-text uppercase">Got <span className="internal-gradient">Questions</span>?</h2>
@@ -186,11 +159,11 @@ export default function Home() {
                 { q: "Can I cancel my subscription?", a: "Yes, you can cancel your monthly plans at any time from your dashboard settings." },
                 { q: "What payment methods do you accept?", a: "Checkout shows all active payment methods configured by admin, including wallet, bank, and transfer options with live account details." }
               ].map((item, i) => (
-                <details key={i} className="rounded-2xl md:rounded-3xl border border-white/12 md:border-white/5 bg-[#1A1A1A]/70 md:bg-transparent backdrop-blur-xl group overflow-hidden transition-all duration-300 md:duration-500 hover:border-white/25 md:hover:border-primary/25">
+                <details key={i} className="rounded-2xl md:rounded-3xl border border-white/10 bg-white/[0.03] group overflow-hidden transition-colors duration-200 hover:border-primary/25">
                   <summary className="px-4 py-2.5 md:px-6 md:py-5 cursor-pointer font-black text-[11px] md:text-xs uppercase flex justify-between items-center list-none hover:bg-white/[0.04] md:hover:bg-white/5 transition-colors text-brand-text">
                     <span>{item.q}</span>
-                    <span className="flex items-center justify-center transition-transform duration-500 group-open:rotate-180">
-                      <ChevronDown className="w-4 h-4 text-brand-text/60 md:text-primary faq-arrow-flash" />
+                    <span className="flex items-center justify-center transition-transform duration-200 group-open:rotate-180">
+                      <ChevronDown className="w-4 h-4 text-brand-text/60 md:text-primary" />
                     </span>
                   </summary>
                   <div className="px-4 pb-3 pt-2.5 md:px-6 md:pb-5 md:pt-4 text-brand-text/55 border-t border-white/10 md:border-white/5 font-medium leading-relaxed text-[11px] md:text-xs">

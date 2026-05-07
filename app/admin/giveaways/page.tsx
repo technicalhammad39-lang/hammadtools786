@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
@@ -14,6 +14,8 @@ import { useToast } from '@/components/ToastProvider';
 import { resolveImageSource } from '@/lib/image-display';
 import UploadedImage from '@/components/UploadedImage';
 import MediaLibraryModal from '@/components/MediaLibraryModal';
+import RichTextEditor from '@/components/RichTextEditor';
+import { normalizeRichTextValue } from '@/lib/rich-text';
 
 interface Giveaway {
   id: string;
@@ -55,6 +57,7 @@ const AdminGiveaways = () => {
     stringPaths: ['image'],
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isStaff) return;
@@ -81,7 +84,7 @@ const AdminGiveaways = () => {
     let finalPayloadForDebug: Record<string, unknown> | null = null;
 
     try {
-      const normalizedDescription = normalizeMultilineText(form.description);
+      const normalizedDescription = normalizeRichTextValue(normalizeMultilineText(form.description));
       const data = {
         ...form,
         description: normalizedDescription,
@@ -131,6 +134,15 @@ const AdminGiveaways = () => {
     }
   };
 
+  useEffect(() => {
+    if (!isAdding) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [isAdding, editingId]);
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this giveaway?')) return;
     try {
@@ -178,6 +190,7 @@ const AdminGiveaways = () => {
 
         {isAdding && (
           <motion.div 
+            ref={editorRef}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="glass rounded-3xl p-8 mb-12 border-primary/20"
@@ -230,11 +243,12 @@ const AdminGiveaways = () => {
                 </div>
               </div>
             </div>
-            <textarea 
+            <RichTextEditor
               placeholder="Description"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary mb-6 h-32"
-              value={form.description}
-              onChange={e => setForm({...form, description: e.target.value})}
+              className="min-h-36"
+              value={form.description || ''}
+              onChange={(nextValue) => setForm({...form, description: nextValue})}
+              rows={6}
             />
             <p className="text-[10px] font-black uppercase tracking-[0.14em] text-brand-text/40 -mt-3 mb-6">
               Line breaks, bullets and emojis are preserved in public giveaway posts.
@@ -322,6 +336,7 @@ const AdminGiveaways = () => {
             }));
           }}
           folder="services"
+          includeFolders={['tools', 'blogs', 'services']}
           title="Giveaway Media Library"
           description="Use existing giveaway assets or upload from device inside this library."
           accept="image/*"

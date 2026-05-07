@@ -52,21 +52,12 @@ function isVisibleElement(element: HTMLElement) {
 
 function collectAnimationTargets(main: HTMLElement) {
   const explicit = Array.from(main.querySelectorAll<HTMLElement>('[data-gsap-reveal="gsap"]'));
-  const implicit = Array.from(main.querySelectorAll<HTMLElement>('section, .glass, [data-gsap-auto="true"]'));
 
   const uniqueTargets: HTMLElement[] = [];
   const seen = new Set<HTMLElement>();
 
-  for (const candidate of [...explicit, ...implicit]) {
+  for (const candidate of explicit) {
     if (seen.has(candidate)) {
-      continue;
-    }
-
-    if (
-      !candidate.hasAttribute('data-gsap-reveal') &&
-      candidate.closest('[data-gsap-reveal="gsap"]') &&
-      !candidate.matches('[data-gsap-reveal="gsap"]')
-    ) {
       continue;
     }
 
@@ -76,7 +67,7 @@ function collectAnimationTargets(main: HTMLElement) {
     }
   }
 
-  return uniqueTargets.slice(0, 120);
+  return uniqueTargets.slice(0, 70);
 }
 
 function hasAnimated(target: HTMLElement) {

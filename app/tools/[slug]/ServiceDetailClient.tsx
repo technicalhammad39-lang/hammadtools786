@@ -25,6 +25,7 @@ import { resolveImageSource } from '@/lib/image-display';
 import type { StoredFileMetadata } from '@/lib/types/domain';
 import UploadedImage from '@/components/UploadedImage';
 import { useAuth } from '@/context/AuthContext';
+import RichTextContent from '@/components/RichTextContent';
 
 interface Plan {
   planName: string;
@@ -413,13 +414,13 @@ export default function ServiceDetailClient({ service, loading }: { service: Ser
               >
                 {service.name}
               </h1>
-              <p
+              <div
                 data-gsap-reveal="gsap"
                 data-gsap-immediate="true"
                 className="text-brand-text/50 text-base md:text-lg font-medium leading-relaxed max-w-2xl"
               >
-                {service.longDescription || service.description}
-              </p>
+                <RichTextContent value={service.longDescription || service.description} />
+              </div>
             </div>
 
             {/* Plan Selection */}

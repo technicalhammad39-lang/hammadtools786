@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
@@ -16,7 +16,6 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { Loader2, Plus, Edit2, Trash2, Save, X, Image as ImageIcon } from 'lucide-react';
-import { useEffect } from 'react';
 import type { Category, CategoryType } from '@/lib/types/domain';
 import { deleteUploadedMedia, toStorageMetadataFromLibrary } from '@/lib/storage-utils';
 import { logFirestoreSaveFailure, sanitizeForFirestore } from '@/lib/firestore-sanitize';
@@ -49,6 +48,7 @@ export default function AdminCategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+  const formRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<Partial<Category>>({
     name: '',
     slug: '',
@@ -88,6 +88,18 @@ export default function AdminCategoriesPage() {
     mediaPaths: ['imageMedia'],
     stringPaths: ['imageUrl'],
   });
+
+  useEffect(() => {
+    if (!isFormOpen) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [isFormOpen, editingId]);
 
   if (!isStaff) {
     return <div className="p-10 text-center font-black uppercase tracking-widest">Access Denied</div>;
@@ -207,6 +219,7 @@ export default function AdminCategoriesPage() {
       <AnimatePresence>
         {isFormOpen && (
           <motion.div
+            ref={formRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
@@ -413,6 +426,7 @@ export default function AdminCategoriesPage() {
           }));
         }}
         folder="services"
+        includeFolders={['tools', 'blogs', 'services']}
         title="Category Media Library"
         description="Select an existing category image or upload a new one from this library."
         accept="image/*"

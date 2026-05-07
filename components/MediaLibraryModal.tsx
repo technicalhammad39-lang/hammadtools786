@@ -41,6 +41,7 @@ interface MediaLibraryModalProps {
   fileAccessToken?: string;
   filterByRelatedFields?: boolean;
   allowDelete?: boolean;
+  includeFolders?: UploadFolder[];
 }
 
 function formatFileSize(bytes: number) {
@@ -92,6 +93,7 @@ export default function MediaLibraryModal({
   fileAccessToken = '',
   filterByRelatedFields = false,
   allowDelete = false,
+  includeFolders = [],
 }: MediaLibraryModalProps) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
@@ -104,6 +106,11 @@ export default function MediaLibraryModal({
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [selectedId, setSelectedId] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const includeFoldersKey = includeFolders.join(',');
+  const resolvedIncludeFolders = useMemo(
+    () => (includeFoldersKey ? includeFoldersKey.split(',') as UploadFolder[] : []),
+    [includeFoldersKey]
+  );
 
   const loadLibrary = useCallback(async (showRefreshState = false) => {
     if (!open) {
@@ -131,6 +138,7 @@ export default function MediaLibraryModal({
 
       const loaded = await fetchMediaLibrary({
         folder,
+        folders: resolvedIncludeFolders,
         limit: 120,
         ...relationFilters,
       });
@@ -143,7 +151,7 @@ export default function MediaLibraryModal({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [open, folder, relatedType, relatedId, relatedUserId, relatedOrderId, relatedProductId, filterByRelatedFields]);
+  }, [open, folder, resolvedIncludeFolders, relatedType, relatedId, relatedUserId, relatedOrderId, relatedProductId, filterByRelatedFields]);
 
   useEffect(() => {
     if (!open) {
@@ -548,8 +556,8 @@ export default function MediaLibraryModal({
                       {isImage ? (
                         <UploadedImage
                           src={previewUrl}
-                          fallbackSrc={null}
-                          fallbackOnError={false}
+                          fallbackSrc="/services-card.webp"
+                          fallbackOnError={true}
                           alt={displayName}
                           className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                         />

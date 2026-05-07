@@ -307,6 +307,10 @@ export function getCouponEligibleSubtotal(coupon: CouponRule, items: CouponCheck
 }
 
 export function isCouponVisibleForRoute(coupon: CouponRule, context: CouponRouteContext) {
+  if (coupon.scope === 'global') {
+    return true;
+  }
+
   const routeKind = classifyRoute(context);
   if (routeKind === 'other') {
     return false;
@@ -317,9 +321,6 @@ export function isCouponVisibleForRoute(coupon: CouponRule, context: CouponRoute
   }
 
   if (routeKind === 'category') {
-    if (coupon.scope === 'global') {
-      return true;
-    }
     if (coupon.scope === 'category') {
       return isCategoryMatch(coupon, context);
     }
@@ -327,9 +328,6 @@ export function isCouponVisibleForRoute(coupon: CouponRule, context: CouponRoute
   }
 
   if (routeKind === 'product') {
-    if (coupon.scope === 'global') {
-      return true;
-    }
     if (coupon.scope === 'category') {
       return isCategoryMatch(coupon, context);
     }

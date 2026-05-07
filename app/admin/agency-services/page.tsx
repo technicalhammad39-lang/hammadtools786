@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
@@ -55,6 +55,7 @@ const ManageAgencyServices = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
   
   // Form State
   const [form, setForm] = useState({
@@ -83,6 +84,18 @@ const ManageAgencyServices = () => {
 
     return () => unsubscribe();
   }, [isStaff, toast]);
+
+  useEffect(() => {
+    if (!isAdding) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [isAdding, editingId]);
 
   const handleEdit = (service: AgencyService) => {
     setEditingId(service.id);
@@ -210,6 +223,7 @@ const ManageAgencyServices = () => {
       <AnimatePresence>
         {isAdding && (
           <motion.div 
+            ref={editorRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
@@ -402,6 +416,7 @@ const ManageAgencyServices = () => {
           }));
         }}
         folder="services"
+        includeFolders={['tools', 'blogs', 'services']}
         title="Agency Service Media Library"
         description="Select an existing asset or upload from device inside this media library."
         accept="image/*"

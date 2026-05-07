@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase';
@@ -31,6 +31,8 @@ import { useToast } from '@/components/ToastProvider';
 import { resolveImageSource } from '@/lib/image-display';
 import UploadedImage from '@/components/UploadedImage';
 import MediaLibraryModal from '@/components/MediaLibraryModal';
+import RichTextEditor from '@/components/RichTextEditor';
+import { normalizeRichTextValue } from '@/lib/rich-text';
 
 type DurationUnit = 'fixed_days' | 'fixed_months' | 'fixed_years';
 type DurationPreset = '1_month' | '2_months' | '3_months' | '6_months' | '12_months' | 'lifetime' | 'custom';
@@ -250,6 +252,7 @@ const AdminProductsPage = () => {
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(defaultForm);
+  const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isStaff) {
@@ -296,6 +299,16 @@ const AdminProductsPage = () => {
     mediaPaths: ['imageMedia'],
     stringPaths: ['image'],
   });
+
+  useEffect(() => {
+    if (!isAdding) {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isAdding, editingId]);
 
   if (!isStaff) {
     return (
@@ -388,8 +401,8 @@ const AdminProductsPage = () => {
         title: cleanTitle,
         name: cleanTitle,
         slug: slugify(cleanTitle),
-        description: form.description.trim(),
-        longDescription: form.description.trim(),
+        description: normalizeRichTextValue(form.description).trim(),
+        longDescription: normalizeRichTextValue(form.description).trim(),
         price: parseNumberInput(form.price, 0),
         salePrice: form.salePrice.trim() ? parseNumberInput(form.salePrice, 0) : null,
         type: 'tools',
@@ -490,6 +503,7 @@ const AdminProductsPage = () => {
       <AnimatePresence>
         {isAdding && (
           <motion.div
+            ref={editorRef}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -680,11 +694,12 @@ const AdminProductsPage = () => {
 
               <div className="space-y-2 mb-4">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/50">Description *</label>
-                <textarea
+                <RichTextEditor
                   value={form.description}
-                  onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                  onChange={(nextValue) => setForm((prev) => ({ ...prev, description: nextValue }))}
                   placeholder="Describe this tool clearly"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 h-32"
+                  className="min-h-36"
+                  rows={6}
                 />
               </div>
 
@@ -913,6 +928,7 @@ const AdminProductsPage = () => {
           }));
         }}
         folder="tools"
+        includeFolders={['tools', 'blogs', 'services']}
         title="Tool Media Library"
         accept="image/*"
         relatedType="tool"

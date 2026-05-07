@@ -12,8 +12,6 @@ export default function PushNotificationBootstrap() {
     if (!user || typeof window === 'undefined') {
       return;
     }
-    const userId = user.uid;
-
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       return;
     }
@@ -24,18 +22,6 @@ export default function PushNotificationBootstrap() {
     let unsubscribeForeground: (() => void) | undefined;
 
     async function setupPush() {
-      const promptKey = `push_prompted_${userId}`;
-      const permission = Notification.permission;
-
-      if (permission === 'default' && !localStorage.getItem(promptKey)) {
-        localStorage.setItem(promptKey, '1');
-        try {
-          await Notification.requestPermission();
-        } catch {
-          return;
-        }
-      }
-
       if (Notification.permission !== 'granted') {
         return;
       }

@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import {
   ArrowLeft,
@@ -35,6 +36,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ToastProvider';
 import UploadedImage from '@/components/UploadedImage';
 import MediaLibraryModal from '@/components/MediaLibraryModal';
+import RichTextEditor from '@/components/RichTextEditor';
 import { deleteUploadedMedia, toStorageMetadataFromLibrary } from '@/lib/storage-utils';
 import { logFirestoreSaveFailure, sanitizeForFirestore } from '@/lib/firestore-sanitize';
 import {
@@ -53,6 +55,7 @@ import {
   parseBlogLinkMeta,
   sanitizeBlogHref,
 } from '@/lib/blog-links';
+import { normalizeRichTextValue, RICH_TEXT_ALLOWED_ELEMENTS } from '@/lib/rich-text';
 
 type BlogFormState = {
   title: string;
@@ -106,6 +109,7 @@ export default function BlogCMSPage() {
   const [linkInsert, setLinkInsert] = useState<LinkInsertState>(INITIAL_LINK_INSERT);
   const shortDescriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isStaff) {
@@ -132,7 +136,10 @@ export default function BlogCMSPage() {
   }, [isStaff, toast]);
 
   const formImagePreview = useMemo(() => {
-    return resolveImageSource(formData, {
+    return resolveImageSource({
+      coverImageMedia: formData.coverImageMedia,
+      coverImageUrl: formData.coverImageUrl,
+    }, {
       mediaPaths: ['coverImageMedia'],
       stringPaths: ['coverImageUrl'],
     });
@@ -170,6 +177,21 @@ export default function BlogCMSPage() {
     setShowMarkdownPreview(false);
     setIsEditorOpen(true);
   }
+
+  useEffect(() => {
+    if (!isEditorOpen) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (editorRef.current) {
+        editorRef.current.scrollTop = 0;
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [isEditorOpen, editingPost?.id]);
 
   function buildMarkdownLinkMarkup(input: {
     anchorText: string;
@@ -287,8 +309,8 @@ export default function BlogCMSPage() {
 
     const title = formData.title.trim();
     const slug = normalizeBlogSlug(title);
-    const shortDescription = formData.shortDescription.trim();
-    const content = formData.content.trim();
+    const shortDescription = normalizeRichTextValue(formData.shortDescription).trim();
+    const content = normalizeRichTextValue(formData.content).trim();
     const resolvedCoverImage = resolveImageSource(formData, {
       mediaPaths: ['coverImageMedia'],
       stringPaths: ['coverImageUrl'],
@@ -431,6 +453,7 @@ export default function BlogCMSPage() {
 
         {isEditorOpen ? (
           <motion.div
+            ref={editorRef}
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             className="fixed inset-0 md:relative md:inset-auto w-full h-full md:h-auto bg-[#121212] md:bg-transparent z-[60] md:z-auto overflow-y-auto md:overflow-visible rounded-none md:rounded-[2.5rem] p-6 md:p-10 border-none md:border border-white/10 mb-12 backdrop-blur-3xl md:backdrop-blur-none"
@@ -491,15 +514,14 @@ export default function BlogCMSPage() {
                   <label className="block text-xs font-bold uppercase tracking-widest text-brand-text/40 mb-2">
                     Short Description*
                   </label>
-                  <textarea
-                    ref={shortDescriptionRef}
+                  <RichTextEditor
                     value={formData.shortDescription}
-                    onChange={(event) =>
-                      setFormData((prev) => ({ ...prev, shortDescription: event.target.value }))
+                    onChange={(nextValue) =>
+                      setFormData((prev) => ({ ...prev, shortDescription: nextValue }))
                     }
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary h-28"
+                    textareaRef={shortDescriptionRef}
+                    className="min-h-28"
                     maxLength={240}
-                    required
                   />
                   <p className="mt-2 text-[11px] text-brand-text/40">
                     {formData.shortDescription.length}/240 characters
@@ -662,12 +684,12 @@ export default function BlogCMSPage() {
                     </div>
                   ) : null}
 
-                  <textarea
-                    ref={contentRef}
+                  <RichTextEditor
                     value={formData.content}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, content: event.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary h-72 font-mono text-sm"
-                    required
+                    onChange={(nextValue) => setFormData((prev) => ({ ...prev, content: nextValue }))}
+                    textareaRef={contentRef}
+                    className="min-h-72 font-mono"
+                    rows={12}
                   />
                 </div>
 
@@ -679,27 +701,8 @@ export default function BlogCMSPage() {
                     <div className="prose prose-invert max-w-none prose-headings:text-brand-text prose-headings:font-black prose-p:text-brand-text/80 prose-li:text-brand-text/80 prose-a:text-primary">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
-                        skipHtml
-                        allowedElements={[
-                          'h1',
-                          'h2',
-                          'h3',
-                          'h4',
-                          'h5',
-                          'h6',
-                          'p',
-                          'a',
-                          'strong',
-                          'em',
-                          'ul',
-                          'ol',
-                          'li',
-                          'blockquote',
-                          'code',
-                          'pre',
-                          'hr',
-                          'br',
-                        ]}
+                        rehypePlugins={[rehypeRaw]}
+                        allowedElements={[...RICH_TEXT_ALLOWED_ELEMENTS]}
                         components={{
                           p: ({ children }) => (
                             <p className="whitespace-pre-wrap leading-7 text-brand-text/80">{children}</p>
@@ -868,6 +871,7 @@ export default function BlogCMSPage() {
             }));
           }}
           folder="blogs"
+          includeFolders={['tools', 'blogs', 'services']}
           title="Blog Media Library"
           description="Select an existing blog image or upload a new one."
           accept="image/*"

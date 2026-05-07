@@ -5,28 +5,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 20;
-const requestBuckets = new Map<string, number[]>();
-
-function getClientIp(request: Request) {
-  const forwardedFor = (request.headers.get('x-forwarded-for') || '').split(',')[0]?.trim();
-  const realIp = (request.headers.get('x-real-ip') || '').trim();
-  return forwardedFor || realIp || 'unknown';
-}
-
-function cleanOldRequests(entries: number[], now: number) {
-  return entries.filter((time) => now - time <= RATE_LIMIT_WINDOW_MS);
-}
-
-function isRateLimited(ip: string) {
-  const now = Date.now();
-  const current = requestBuckets.get(ip) || [];
-  const recent = cleanOldRequests(current, now);
-  recent.push(now);
-  requestBuckets.set(ip, recent);
-  return recent.length > RATE_LIMIT_MAX_REQUESTS;
-}
 
 function normalizeHost(value: string) {
   return value.trim().toLowerCase().replace(/\.$/, '');
@@ -139,17 +117,6 @@ export async function POST(request: Request) {
           error: 'Request origin is not allowed.',
         },
         { status: 403, headers: { 'Cache-Control': 'no-store' } }
-      );
-    }
-
-    const ip = getClientIp(request);
-    if (isRateLimited(ip)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Too many subscribe attempts. Please wait a minute and try again.',
-        },
-        { status: 429, headers: { 'Cache-Control': 'no-store' } }
       );
     }
 

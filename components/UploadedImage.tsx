@@ -18,7 +18,7 @@ function resolvePreferredSource(value: string, fallback: string) {
 export default function UploadedImage({
   src,
   fallbackSrc = '/services-card.webp',
-  fallbackOnError = false,
+  fallbackOnError = true,
   alt,
   className,
   loading,

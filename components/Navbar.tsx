@@ -4,9 +4,18 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, X, User, ShoppingBag } from 'lucide-react';
+import { Loader2, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { collection, limit, onSnapshot, query } from 'firebase/firestore';
+import { db } from '@/firebase';
+
+type SearchResult = {
+  id: string;
+  label: string;
+  sub: string;
+  href: string;
+};
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +23,10 @@ const Navbar = () => {
   const { user, profile } = useAuth();
   const { totalItems, setIsCartOpen } = useCart();
   const isAdminRoute = pathname.startsWith('/admin');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -44,6 +57,106 @@ const Navbar = () => {
     { name: 'Giveaway', href: '/giveaway' },
     { name: 'About', href: '/about' },
   ];
+
+  useEffect(() => {
+    if (!searchOpen || !searchTerm.trim()) {
+      const resetTimer = window.setTimeout(() => {
+        setSearchResults([]);
+        setSearchLoading(false);
+      }, 0);
+      return () => window.clearTimeout(resetTimer);
+    }
+
+    let unsubscribers: Array<() => void> = [];
+    const startTimer = window.setTimeout(() => {
+      setSearchLoading(true);
+      const needle = searchTerm.trim().toLowerCase();
+      const resultMap = new Map<string, SearchResult>();
+
+      function publish() {
+        setSearchResults(Array.from(resultMap.values()).slice(0, 10));
+        setSearchLoading(false);
+      }
+
+      unsubscribers = [
+        onSnapshot(query(collection(db, 'services'), limit(80)), (snapshot) => {
+          Array.from(resultMap.keys())
+            .filter((key) => key.startsWith('tool-'))
+            .forEach((key) => resultMap.delete(key));
+          snapshot.docs.forEach((entry) => {
+            const data = entry.data() as Record<string, any>;
+            if ((data.active === false) || ((data.type || 'tools') !== 'tools')) return;
+            const title = String(data.title || data.name || 'Tool');
+            const slug = String(data.slug || title.toLowerCase().replace(/\s+/g, '-'));
+            const haystack = `${title} ${data.description || ''} ${data.categoryName || data.category || ''}`.toLowerCase();
+            if (haystack.includes(needle)) {
+              resultMap.set(`tool-${entry.id}`, {
+                id: `tool-${entry.id}`,
+                label: title,
+                sub: 'Tool',
+                href: `/tools/${slug}`,
+              });
+            }
+          });
+          publish();
+        }),
+        onSnapshot(query(collection(db, 'blogPosts'), limit(50)), (snapshot) => {
+          Array.from(resultMap.keys())
+            .filter((key) => key.startsWith('blog-'))
+            .forEach((key) => resultMap.delete(key));
+          snapshot.docs.forEach((entry) => {
+            const data = entry.data() as Record<string, any>;
+            const published = data.published === true || String(data.status || '').toLowerCase() === 'published';
+            if (!published) return;
+            const title = String(data.title || 'Blog');
+            const slug = String(data.slug || title.toLowerCase().replace(/\s+/g, '-'));
+            const haystack = `${title} ${data.shortDescription || data.excerpt || data.content || ''}`.toLowerCase();
+            if (haystack.includes(needle)) {
+              resultMap.set(`blog-${entry.id}`, {
+                id: `blog-${entry.id}`,
+                label: title,
+                sub: 'Blog',
+                href: `/blogs/${slug}`,
+              });
+            }
+          });
+          publish();
+        }),
+        onSnapshot(query(collection(db, 'giveaways'), limit(30)), (snapshot) => {
+          Array.from(resultMap.keys())
+            .filter((key) => key.startsWith('giveaway-'))
+            .forEach((key) => resultMap.delete(key));
+          snapshot.docs.forEach((entry) => {
+            const data = entry.data() as Record<string, any>;
+            const title = String(data.title || 'Giveaway');
+            const haystack = `${title} ${data.description || data.prize || ''}`.toLowerCase();
+            if (haystack.includes(needle)) {
+              resultMap.set(`giveaway-${entry.id}`, {
+                id: `giveaway-${entry.id}`,
+                label: title,
+                sub: 'Giveaway',
+                href: '/giveaway',
+              });
+            }
+          });
+          publish();
+        }),
+      ];
+    }, 0);
+
+    return () => {
+      window.clearTimeout(startTimer);
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [searchOpen, searchTerm]);
+
+  function openFirstSearchResult() {
+    const firstResult = searchResults[0];
+    if (!firstResult) {
+      return;
+    }
+    window.location.href = firstResult.href;
+  }
 
   if (isAdminRoute) return null;
 
@@ -81,6 +194,14 @@ const Navbar = () => {
             </div>
             
             <div className="flex items-center space-x-4 2xl:space-x-5 ml-8 shrink-0">
+              <button
+                onClick={() => setSearchOpen((prev) => !prev)}
+                className="p-2 hover:bg-white/5 rounded-full transition-colors group"
+                aria-label="Open search"
+              >
+                <Search className="w-6 h-6 text-brand-text/40 group-hover:text-primary" />
+              </button>
+
               <button 
                 onClick={() => setIsCartOpen(true)}
                 className="relative p-2 hover:bg-white/5 rounded-full transition-colors group"
@@ -118,6 +239,13 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <div className="xl:hidden flex items-center space-x-4">
+            <button
+              onClick={() => setSearchOpen((prev) => !prev)}
+              className="p-2 text-brand-text/40"
+              aria-label="Open search"
+            >
+              <Search className="w-6 h-6" />
+            </button>
             <button 
               onClick={() => setIsCartOpen(true)}
               className="relative p-2 text-brand-text/40"
@@ -139,6 +267,74 @@ const Navbar = () => {
               <X className="mobile-menu-icon mobile-menu-icon-close absolute inset-0 m-auto" />
             </button>
           </div>
+        </div>
+      </div>
+
+      <div
+        data-open={searchOpen ? 'true' : 'false'}
+        aria-hidden={!searchOpen}
+        className="public-search-panel border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-2xl"
+      >
+        <div className="site-container py-3">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-text/35" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  openFirstSearchResult();
+                }
+                if (event.key === 'Escape') {
+                  setSearchOpen(false);
+                }
+              }}
+              placeholder="Search tools, blogs, giveaways..."
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-3 pl-11 pr-11 text-sm text-brand-text outline-none focus:border-primary/45"
+              autoFocus={searchOpen}
+            />
+            <button
+              type="button"
+              onClick={() => setSearchOpen(false)}
+              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-brand-text/50 hover:bg-white/5 hover:text-brand-text"
+              aria-label="Close search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {searchTerm.trim() ? (
+            <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black/45">
+              {searchLoading ? (
+                <div className="flex items-center justify-center gap-2 px-4 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text/45">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  Searching
+                </div>
+              ) : searchResults.length ? (
+                <div className="divide-y divide-white/5">
+                  {searchResults.map((result) => (
+                    <Link
+                      key={result.id}
+                      href={result.href}
+                      onClick={() => setSearchOpen(false)}
+                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/5"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-brand-text">{result.label}</span>
+                        <span className="block text-[10px] font-black uppercase tracking-widest text-brand-text/35">{result.sub}</span>
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary">Open</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-4 text-center text-[11px] font-black uppercase tracking-widest text-brand-text/35">
+                  No results found
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
 

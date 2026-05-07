@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ShoppingCart,
   ChevronRight,
@@ -34,6 +34,14 @@ function getOriginalPrice(service: ProductItem) {
   return original > current ? original : 0;
 }
 
+function toPlainPreview(value: string) {
+  return (value || '')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/[*_~`]+/g, '')
+    .trim();
+}
+
 const ServicesSection = () => {
   const { addToCart } = useCart();
   const [services, setServices] = useState<ProductItem[]>([]);
@@ -43,6 +51,13 @@ const ServicesSection = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState<'order' | 'price-low' | 'price-high'>('order');
   const pathname = usePathname();
+  const categoryScrollerRef = useRef<HTMLDivElement | null>(null);
+  const categoryDragRef = useRef({
+    active: false,
+    dragged: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -109,6 +124,58 @@ const ServicesSection = () => {
 
   const displayServices = pathname === '/' ? filteredServices.slice(0, 6) : filteredServices;
 
+  const handleCategoryPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const scroller = categoryScrollerRef.current;
+    if (!scroller) {
+      return;
+    }
+
+    categoryDragRef.current = {
+      active: true,
+      dragged: false,
+      startX: event.clientX,
+      scrollLeft: scroller.scrollLeft,
+    };
+    scroller.setPointerCapture(event.pointerId);
+  };
+
+  const handleCategoryPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const scroller = categoryScrollerRef.current;
+    const state = categoryDragRef.current;
+    if (!scroller || !state.active) {
+      return;
+    }
+
+    const deltaX = event.clientX - state.startX;
+    if (Math.abs(deltaX) > 4) {
+      state.dragged = true;
+    }
+    scroller.scrollLeft = state.scrollLeft - deltaX;
+  };
+
+  const stopCategoryDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const scroller = categoryScrollerRef.current;
+    if (categoryDragRef.current.active && scroller?.hasPointerCapture(event.pointerId)) {
+      scroller.releasePointerCapture(event.pointerId);
+    }
+    categoryDragRef.current.active = false;
+  };
+
+  const shouldIgnoreCategoryClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!categoryDragRef.current.dragged) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    categoryDragRef.current.dragged = false;
+    return true;
+  };
+
   if (loading) {
     return (
       <section className="py-16 md:py-32 relative overflow-hidden bg-brand-bg">
@@ -168,9 +235,22 @@ const ServicesSection = () => {
               <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text/30 group-focus-within:text-primary transition-colors" />
             </div>
 
-            <div className="lg:col-span-8 flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 md:pb-2 no-scrollbar">
+            <div
+              ref={categoryScrollerRef}
+              onPointerDown={handleCategoryPointerDown}
+              onPointerMove={handleCategoryPointerMove}
+              onPointerUp={stopCategoryDrag}
+              onPointerCancel={stopCategoryDrag}
+              onPointerLeave={stopCategoryDrag}
+              className="lg:col-span-8 flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 md:pb-2 no-scrollbar scroll-smooth cursor-grab active:cursor-grabbing select-none touch-pan-x"
+            >
               <button
-                onClick={() => setSelectedCategory('all')}
+                onClick={(event) => {
+                  if (shouldIgnoreCategoryClick(event)) {
+                    return;
+                  }
+                  setSelectedCategory('all');
+                }}
                 className={`whitespace-nowrap px-4 md:px-6 py-2.5 md:py-4 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest border transition-all ${selectedCategory === 'all'
                   ? 'bg-primary border-primary text-black shadow-lg shadow-primary/20'
                   : 'bg-white/5 border-white/5 text-brand-text/40 hover:border-white/20'
@@ -181,7 +261,12 @@ const ServicesSection = () => {
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
+                  onClick={(event) => {
+                    if (shouldIgnoreCategoryClick(event)) {
+                      return;
+                    }
+                    setSelectedCategory(category.id);
+                  }}
                   className={`whitespace-nowrap px-4 md:px-6 py-2.5 md:py-4 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest border transition-all ${selectedCategory === category.id
                     ? 'bg-primary border-primary text-black shadow-lg shadow-primary/20'
                     : 'bg-white/5 border-white/5 text-brand-text/40 hover:border-white/20'
@@ -239,7 +324,7 @@ const ServicesSection = () => {
 
                   <div className="p-6 md:p-10 flex flex-col flex-1 relative z-20">
                     <h3 className="text-2xl md:text-3xl font-black mb-2 md:mb-4 text-brand-text group-hover:text-primary transition-colors leading-none whitespace-pre-wrap break-words line-clamp-2 min-h-[2.2em] md:min-h-[2.1em]">{title}</h3>
-                    <p className="text-brand-text/40 mb-6 md:mb-10 line-clamp-3 text-xs md:text-sm font-medium leading-relaxed italic min-h-[3.8em]">{service.description}</p>
+                    <p className="text-brand-text/40 mb-6 md:mb-10 line-clamp-3 text-xs md:text-sm font-medium leading-relaxed italic min-h-[3.8em]">{toPlainPreview(service.description || '')}</p>
 
                     <div className="mt-auto">
                       <div className="flex items-end justify-between mb-6 md:mb-8">

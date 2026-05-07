@@ -34,6 +34,7 @@ import { useToast } from '@/components/ToastProvider';
 import { resolveImageSource } from '@/lib/image-display';
 import type { StoredFileMetadata } from '@/lib/types/domain';
 import UploadedImage from '@/components/UploadedImage';
+import RichTextContent from '@/components/RichTextContent';
 
 interface Giveaway {
   id: string;
@@ -168,7 +169,8 @@ const GiveawayPost = ({ giveaway }: { giveaway: Giveaway }) => {
     ? Math.ceil((endDateMs - nowMs) / (1000 * 60 * 60 * 24))
     : null;
   const normalizedDescription = normalizeMultilineText(giveaway.description);
-  const canExpandDescription = normalizedDescription.length > DESCRIPTION_PREVIEW_LIMIT;
+  const hasFormattedDescription = /<[a-z][\s\S]*>/i.test(normalizedDescription);
+  const canExpandDescription = !hasFormattedDescription && normalizedDescription.length > DESCRIPTION_PREVIEW_LIMIT;
   const previewDescription = canExpandDescription && !expandedDescription
     ? `${normalizedDescription.slice(0, DESCRIPTION_PREVIEW_LIMIT).trimEnd()}...`
     : normalizedDescription;
@@ -222,9 +224,10 @@ const GiveawayPost = ({ giveaway }: { giveaway: Giveaway }) => {
         </h2>
         {hasGiveawayImage ? (
           <>
-            <p className="text-brand-text/70 text-sm sm:text-[15px] leading-relaxed whitespace-pre-line break-words">
-              {previewDescription || 'No giveaway details provided yet.'}
-            </p>
+            <RichTextContent
+              content={previewDescription || 'No giveaway details provided yet.'}
+              paragraphClassName="text-brand-text/70 text-sm sm:text-[15px] leading-relaxed whitespace-pre-line break-words"
+            />
             {canExpandDescription ? (
               <button
                 type="button"
@@ -263,9 +266,10 @@ const GiveawayPost = ({ giveaway }: { giveaway: Giveaway }) => {
       ) : (
         <div className="w-full border-y border-white/5 bg-gradient-to-b from-black/20 to-black/35 px-4 py-4 sm:px-6 sm:py-5">
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-5">
-            <p className="text-brand-text/75 text-sm sm:text-[15px] leading-relaxed whitespace-pre-line break-words">
-              {previewDescription || 'No giveaway details provided yet.'}
-            </p>
+            <RichTextContent
+              content={previewDescription || 'No giveaway details provided yet.'}
+              paragraphClassName="text-brand-text/75 text-sm sm:text-[15px] leading-relaxed whitespace-pre-line break-words"
+            />
             {canExpandDescription ? (
               <button
                 type="button"

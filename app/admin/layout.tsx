@@ -28,8 +28,10 @@ import Image from 'next/image';
 import { AnimatePresence } from 'motion/react';
 import NotificationBell from '@/components/NotificationBell';
 import AdminOrderTicker from '@/components/AdminOrderTicker';
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { collection, limit, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/firebase';
+
+type AdminSearchResult = { id: string; label: string; sub: string; href: string };
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const { profile, isAdmin, isStaff, loading, logout } = useAuth();
@@ -37,7 +39,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [searchOpen, setSearchOpen] = React.useState(false);
-  const [searchResults, setSearchResults] = React.useState<Array<{ id: string; label: string; sub: string; href: string }>>([]);
+  const [searchResults, setSearchResults] = React.useState<AdminSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = React.useState(false);
 
   const sidebarItems = [
@@ -85,155 +87,132 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
     if (!searchTerm.trim()) {
       setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
 
     let active = true;
+    let unsubscribeListeners: Array<() => void> = [];
     setSearchLoading(true);
-    const timer = setTimeout(async () => {
-      try {
-        const needle = searchTerm.trim().slice(0, 120).toLowerCase();
-        const subscribersPromise = isAdmin
-          ? getDocs(query(collection(db, 'newsletter_subscribers'), limit(30)))
-          : Promise.resolve(null);
-        const [
-          usersSnap,
-          servicesSnap,
-          agencySnap,
-          ordersSnap,
-          categoriesSnap,
-          couponsSnap,
-          blogSnap,
-          giveawaySnap,
-          notificationsSnap,
-          subscribersSnap,
-        ] = await Promise.all([
-          getDocs(query(collection(db, 'users'), limit(30))),
-          getDocs(query(collection(db, 'services'), limit(40))),
-          getDocs(query(collection(db, 'agency_services'), limit(20))),
-          getDocs(query(collection(db, 'orders'), limit(30))),
-          getDocs(query(collection(db, 'categories'), limit(20))),
-          getDocs(query(collection(db, 'coupons'), limit(20))),
-          getDocs(query(collection(db, 'blogPosts'), limit(20))),
-          getDocs(query(collection(db, 'giveaways'), limit(20))),
-          getDocs(query(collection(db, 'notification_dispatches'), limit(20))),
-          subscribersPromise,
-        ]);
 
-        const results: Array<{ id: string; label: string; sub: string; href: string }> = [];
+    const timer = setTimeout(() => {
+      const needle = searchTerm.trim().slice(0, 120).toLowerCase();
+      const buckets: Record<string, AdminSearchResult[]> = {};
 
-        usersSnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const label = data.displayName || data.email || 'User';
-          const haystack = `${label} ${data.email || ''}`.toLowerCase();
-          if (haystack.includes(needle)) {
-            results.push({ id: `user-${doc.id}`, label, sub: 'User', href: '/admin/users' });
-          }
-        });
+      const publish = () => {
+        if (!active) {
+          return;
+        }
 
-        servicesSnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const title = data.title || data.name || 'Tool';
-          const haystack = `${title} ${data.categoryName || ''}`.toLowerCase();
-          if (haystack.includes(needle)) {
-            results.push({
-              id: `tool-${doc.id}`,
-              label: title,
-              sub: data.type === 'services' ? 'Service' : 'Tool',
-              href: data.type === 'services' ? '/admin/agency-services' : '/admin/tools',
+        setSearchResults(Object.values(buckets).flat().slice(0, 14));
+        setSearchLoading(false);
+      };
+
+      const watchCollection = (
+        bucketKey: string,
+        collectionName: string,
+        maxDocs: number,
+        projector: (docId: string, data: any) => AdminSearchResult | null,
+        adminOnly = false
+      ) => {
+        if (adminOnly && !isAdmin) {
+          buckets[bucketKey] = [];
+          return;
+        }
+
+        const unsubscribe = onSnapshot(
+          query(collection(db, collectionName), limit(maxDocs)),
+          (snapshot) => {
+            buckets[bucketKey] = [];
+            snapshot.forEach((doc) => {
+              const result = projector(doc.id, doc.data());
+              if (result) {
+                buckets[bucketKey].push(result);
+              }
             });
+            publish();
+          },
+          (error) => {
+            console.error(`Admin search listener failed for ${collectionName}:`, error);
+            buckets[bucketKey] = [];
+            publish();
           }
-        });
+        );
 
-        agencySnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const title = data.title || 'Agency Service';
-          const haystack = `${title} ${data.description || ''}`.toLowerCase();
-          if (haystack.includes(needle)) {
-            results.push({ id: `agency-${doc.id}`, label: title, sub: 'Agency Service', href: '/admin/agency-services' });
-          }
-        });
+        unsubscribeListeners.push(unsubscribe);
+      };
 
-        ordersSnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const orderNumber = data.orderId || data.order_id || data.orderNumber || 'Order';
-          const haystack = `${orderNumber} ${data.userEmail || data.email || ''} ${data.userPhone || data.phone || ''} ${data.userName || ''}`.toLowerCase();
-          if (haystack.includes(needle)) {
-            results.push({ id: `order-${doc.id}`, label: orderNumber, sub: 'Order', href: `/admin/orders?order=${doc.id}` });
-          }
-        });
-
-        categoriesSnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const label = data.name || 'Category';
-          if (label.toLowerCase().includes(needle)) {
-            results.push({ id: `category-${doc.id}`, label, sub: 'Category', href: '/admin/categories' });
-          }
-        });
-
-        couponsSnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const label = data.code || 'Coupon';
-          const haystack = `${label} ${data.description || ''}`.toLowerCase();
-          if (haystack.includes(needle)) {
-            results.push({ id: `coupon-${doc.id}`, label, sub: 'Coupon', href: '/admin/coupons' });
-          }
-        });
-
-        blogSnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const label = data.title || 'Blog Post';
-          if (label.toLowerCase().includes(needle)) {
-            results.push({ id: `blog-${doc.id}`, label, sub: 'Blog', href: '/admin/blog' });
-          }
-        });
-
-        giveawaySnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const label = data.title || 'Giveaway';
-          if (label.toLowerCase().includes(needle)) {
-            results.push({ id: `giveaway-${doc.id}`, label, sub: 'Giveaway', href: '/admin/giveaways' });
-          }
-        });
-
-        notificationsSnap.forEach((doc) => {
-          const data = doc.data() as any;
-          const label = data.title || 'Notification';
-          if (label.toLowerCase().includes(needle)) {
-            results.push({ id: `notif-${doc.id}`, label, sub: 'Notification', href: '/admin/notifications' });
-          }
-        });
-
-        if (subscribersSnap) {
-          subscribersSnap.forEach((doc) => {
-            const data = doc.data() as any;
-            const email = (data.email || '').toString();
-            if (email.toLowerCase().includes(needle)) {
-              results.push({ id: `subscriber-${doc.id}`, label: email, sub: 'Subscriber', href: '/admin/subscribers' });
-            }
-          });
+      watchCollection('tools', 'services', 80, (docId, data) => {
+        const title = (data.title || data.name || 'Tool').toString();
+        const type = (data.type || 'tools').toString();
+        const haystack = `${title} ${data.categoryName || ''} ${data.category || ''} ${data.description || ''}`.toLowerCase();
+        if (!haystack.includes(needle)) {
+          return null;
         }
 
-        if (active) {
-          setSearchResults(results.slice(0, 12));
+        return {
+          id: `tool-${docId}`,
+          label: title,
+          sub: type === 'services' ? 'Service' : 'Tool',
+          href: type === 'services' ? '/admin/agency-services' : '/admin/tools',
+        };
+      });
+
+      watchCollection('orders', 'orders', 80, (docId, data) => {
+        const orderNumber = (data.orderId || data.order_id || data.orderNumber || docId || 'Order').toString();
+        const haystack = `${orderNumber} ${data.userEmail || data.email || ''} ${data.userPhone || data.phone || ''} ${data.userName || data.customerName || ''}`.toLowerCase();
+        if (!haystack.includes(needle)) {
+          return null;
         }
-      } catch (error) {
-        console.error('Admin search failed:', error);
-        if (active) {
-          setSearchResults([]);
+
+        return { id: `order-${docId}`, label: orderNumber, sub: 'Order', href: `/admin/orders?order=${docId}` };
+      });
+
+      watchCollection('blogs', 'blogPosts', 80, (docId, data) => {
+        const title = (data.title || 'Blog Post').toString();
+        const haystack = `${title} ${data.shortDescription || ''} ${data.excerpt || ''}`.toLowerCase();
+        if (!haystack.includes(needle)) {
+          return null;
         }
-      } finally {
-        if (active) {
-          setSearchLoading(false);
+
+        return { id: `blog-${docId}`, label: title, sub: 'Blog', href: '/admin/blog' };
+      });
+
+      watchCollection('giveaways', 'giveaways', 80, (docId, data) => {
+        const title = (data.title || 'Giveaway').toString();
+        const haystack = `${title} ${data.description || ''}`.toLowerCase();
+        if (!haystack.includes(needle)) {
+          return null;
         }
-      }
+
+        return { id: `giveaway-${docId}`, label: title, sub: 'Giveaway', href: '/admin/giveaways' };
+      });
+
+      watchCollection('users', 'users', 80, (docId, data) => {
+        const label = (data.displayName || data.name || data.email || 'User').toString();
+        const haystack = `${label} ${data.email || ''} ${data.phone || ''}`.toLowerCase();
+        if (!haystack.includes(needle)) {
+          return null;
+        }
+
+        return { id: `user-${docId}`, label, sub: 'User', href: '/admin/users' };
+      }, true);
     }, 300);
 
     return () => {
       active = false;
       clearTimeout(timer);
+      unsubscribeListeners.forEach((unsubscribe) => unsubscribe());
     };
   }, [searchTerm, isAdmin, isStaff]);
+
+  const openFirstSearchResult = () => {
+    if (!searchResults[0]) {
+      return;
+    }
+
+    window.location.href = searchResults[0].href;
+  };
 
   if (loading) {
     return <div className="min-h-screen bg-brand-soft flex items-center justify-center text-primary font-black uppercase tracking-widest">Loading...</div>;
@@ -333,6 +312,11 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-6 text-xs font-black uppercase tracking-widest focus:outline-none focus:border-primary/50 transition-all text-brand-text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  openFirstSearchResult();
+                }
+              }}
               onFocus={() => setSearchOpen(true)}
               onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
             />
@@ -369,6 +353,16 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
           
           <div className="flex items-center gap-4 lg:gap-6 relative">
+            <button
+              onClick={() => {
+                setSearchOpen(true);
+                setIsMobileMenuOpen(false);
+              }}
+              className="md:hidden p-3 bg-white/5 rounded-xl text-brand-text/60 hover:text-primary transition-colors"
+              aria-label="Open admin search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
             <NotificationBell />
             <div className="hidden lg:flex flex-col items-end mr-4">
                <div className="text-[10px] font-black uppercase tracking-widest text-brand-text/40">Server Status</div>
@@ -419,6 +413,74 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
         </header>
 
+        <AnimatePresence>
+          {searchOpen ? (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="md:hidden sticky top-20 z-[75] border-b border-white/10 bg-black/95 backdrop-blur-2xl px-4 py-3"
+            >
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-text/30 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search tools, users, orders..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs font-black uppercase tracking-widest focus:outline-none focus:border-primary/50 text-brand-text"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        openFirstSearchResult();
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <button
+                  onClick={() => setSearchOpen(false)}
+                  className="h-11 w-11 rounded-2xl border border-white/10 bg-white/5 text-brand-text/60 grid place-items-center"
+                  aria-label="Close admin search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {searchTerm.trim().length > 0 ? (
+                <div className="mt-3 rounded-2xl border border-white/10 bg-black/60 overflow-hidden">
+                  <div className="p-3 text-[9px] font-black uppercase tracking-widest text-brand-text/40 border-b border-white/5 flex items-center justify-between">
+                    <span>Search Results</span>
+                    {searchLoading ? <span className="text-primary">Searching...</span> : null}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto no-scrollbar">
+                    {searchResults.length === 0 ? (
+                      <div className="p-4 text-[10px] font-black uppercase tracking-widest text-brand-text/30">
+                        No matches found.
+                      </div>
+                    ) : (
+                      searchResults.map((result) => (
+                        <Link
+                          key={result.id}
+                          href={result.href}
+                          onClick={() => setSearchOpen(false)}
+                          className="flex items-center justify-between px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors"
+                        >
+                          <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-text">{result.label}</div>
+                            <div className="text-[9px] font-black uppercase tracking-widest text-brand-text/40">{result.sub}</div>
+                          </div>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-primary">Open</span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
         <AdminOrderTicker />
 
         <main className="flex-1 p-4 lg:p-10 overflow-y-auto no-scrollbar pb-32 lg:pb-10">
@@ -450,4 +512,3 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default AdminLayout;
-

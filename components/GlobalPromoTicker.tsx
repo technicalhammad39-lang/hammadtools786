@@ -1,62 +1,35 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, limit, onSnapshot, query, where } from 'firebase/firestore';
 import { Copy, X } from 'lucide-react';
 import { db } from '@/firebase';
 import { useToast } from '@/components/ToastProvider';
+import {
+  getCouponDisplayTitle,
+  normalizeCoupon,
+  pickBestCouponForRoute,
+  toMillis,
+  type CouponRecord,
+  type CouponRouteContext,
+  type CouponScope,
+} from '@/lib/coupons';
 
 const SESSION_HIDE_KEY = 'global_promo_ticker_hidden_v1';
 const FIRE = '\uD83D\uDD25';
 
-type CouponType = 'tool' | 'category';
-
 export interface PromoCouponData {
   code: string;
-  type: CouponType;
+  type?: CouponScope | 'tool';
   targetName: string;
   expiryTime?: unknown;
   expiry_timestamp?: unknown;
-}
-
-function toMillis(value: unknown) {
-  if (!value) {
-    return 0;
-  }
-  if (typeof (value as any)?.toMillis === 'function') {
-    return Number((value as any).toMillis() || 0);
-  }
-  if (typeof (value as any)?.toDate === 'function') {
-    const date = (value as any).toDate();
-    return date instanceof Date ? date.getTime() : 0;
-  }
-  if (value instanceof Date) {
-    return value.getTime();
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : 0;
-  }
-  if (typeof value === 'string') {
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
-  }
-  return 0;
+  discountPercentage?: number;
 }
 
 function normalizeText(value: unknown) {
   return String(value || '').trim();
-}
-
-function normalizeType(value: unknown): CouponType | null {
-  const raw = normalizeText(value).toLowerCase();
-  if (raw === 'tool' || raw === 'product') {
-    return 'tool';
-  }
-  if (raw === 'category') {
-    return 'category';
-  }
-  return null;
 }
 
 function formatCountdown(msRemaining: number) {
@@ -80,40 +53,44 @@ function normalizeCategoryTarget(name: string) {
   return value.replace(/\s+tools?\s*$/i, '').trim() || value;
 }
 
-function getPromoText(data: PromoCouponData) {
-  if (data.type === 'tool') {
-    return `${FIRE} Exclusive Discount: Get ${data.targetName} Pro now! Use Coupen: ${data.code}`;
+function getPromoText(data: CouponRecord) {
+  const targetName = getCouponDisplayTitle(data);
+  const discount = data.discountPercentage ? `${data.discountPercentage}% ` : '';
+  if (data.scope === 'product') {
+    return `${FIRE} Exclusive Discount: Get ${targetName} now! Use Coupon: ${data.code}`;
   }
-  const categoryTarget = normalizeCategoryTarget(data.targetName);
-  return `${FIRE} Category Sale: All ${categoryTarget} tools are discounted! Use: ${data.code}`;
+  if (data.scope === 'category') {
+    const categoryTarget = normalizeCategoryTarget(targetName);
+    return `${FIRE} Category Sale: ${discount}off ${categoryTarget} tools. Use: ${data.code}`;
+  }
+  return `${FIRE} Sitewide Deal: ${discount}off premium tools. Use: ${data.code}`;
 }
 
-function mapBackendCoupon(raw: Record<string, unknown>): PromoCouponData | null {
-  const code = normalizeText(raw.code).toUpperCase();
-  const type = normalizeType(raw.type ?? raw.scope ?? raw.couponType);
-  if (!code || !type) {
+function mapPropCoupon(input: PromoCouponData): CouponRecord | null {
+  const code = normalizeText(input.code).toUpperCase();
+  if (!code) {
     return null;
   }
-
-  const targetName =
-    type === 'tool'
-      ? normalizeText(raw.targetName || raw.productName || raw.productSlug || 'Featured Tool')
-      : normalizeText(raw.targetName || raw.categoryName || 'Selected Category');
-
-  const expiryTime = raw.expiry_timestamp ?? raw.expiryTime ?? raw.expiryDate ?? null;
-  return {
+  const scope = input.type === 'tool' ? 'product' : input.type || 'global';
+  return normalizeCoupon({
     code,
-    type,
-    targetName: targetName || (type === 'tool' ? 'Featured Tool' : 'Selected Category'),
-    expiryTime,
-    expiry_timestamp: raw.expiry_timestamp,
-  };
+    scope,
+    active: true,
+    discountPercentage: input.discountPercentage || 0,
+    expiryDate: input.expiry_timestamp ?? input.expiryTime ?? null,
+    targetName: input.targetName,
+  });
 }
 
 export default function GlobalPromoTicker({ couponData }: { couponData?: PromoCouponData | null }) {
   const pathname = usePathname();
   const toast = useToast();
-  const [liveCoupon, setLiveCoupon] = useState<PromoCouponData | null>(null);
+  const [liveCoupon, setLiveCoupon] = useState<CouponRecord | null>(null);
+  const baseRouteContext = useMemo<CouponRouteContext>(
+    () => ({ pathname: pathname || '/' }),
+    [pathname]
+  );
+  const [productRouteContext, setProductRouteContext] = useState<CouponRouteContext | null>(null);
   const [hiddenForSession, setHiddenForSession] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -126,6 +103,45 @@ export default function GlobalPromoTicker({ couponData }: { couponData?: PromoCo
   const copiedTimeoutRef = useRef<number | null>(null);
 
   const isAdminRoute = pathname.startsWith('/admin');
+  const routeContext =
+    productRouteContext?.pathname === baseRouteContext.pathname
+      ? productRouteContext
+      : baseRouteContext;
+
+  useEffect(() => {
+    const path = pathname || '/';
+    const productMatch = path.match(/^\/tools\/([^/]+)$/);
+    if (!productMatch) {
+      return;
+    }
+
+    const slug = decodeURIComponent(productMatch[1] || '').trim().toLowerCase();
+    if (!slug) {
+      return;
+    }
+
+    const productQuery = query(collection(db, 'services'), where('slug', '==', slug), limit(1));
+    const unsubscribe = onSnapshot(
+      productQuery,
+      (snapshot) => {
+        const data = snapshot.docs[0]?.data() as Record<string, unknown> | undefined;
+        setProductRouteContext({
+          pathname: path,
+          productId: snapshot.docs[0]?.id || '',
+          productSlug: slug,
+          slug,
+          categoryId: normalizeText(data?.categoryId),
+          categorySlug: normalizeText(data?.categorySlug),
+          categoryName: normalizeText(data?.categoryName || data?.category),
+        });
+      },
+      () => {
+        setProductRouteContext({ pathname: path, productSlug: slug, slug });
+      }
+    );
+
+    return () => unsubscribe();
+  }, [pathname]);
 
   useEffect(() => {
     if (isAdminRoute || couponData) {
@@ -136,27 +152,10 @@ export default function GlobalPromoTicker({ couponData }: { couponData?: PromoCo
     const unsubscribe = onSnapshot(
       couponsQuery,
       (snapshot) => {
-        const options = snapshot.docs
-          .map((docSnap) => mapBackendCoupon(docSnap.data() as Record<string, unknown>))
-          .filter((entry): entry is PromoCouponData => Boolean(entry))
-          .map((entry) => ({
-            ...entry,
-            expiryMs: toMillis(entry.expiry_timestamp ?? entry.expiryTime),
-          }))
-          .filter((entry) => entry.expiryMs > Date.now())
-          .sort((a, b) => a.expiryMs - b.expiryMs);
-
-        if (!options.length) {
-          setLiveCoupon(null);
-          return;
-        }
-
-        setLiveCoupon({
-          code: options[0].code,
-          type: options[0].type,
-          targetName: options[0].targetName,
-          expiryTime: options[0].expiryMs,
-        });
+        const coupons = snapshot.docs.map((docSnap) =>
+          normalizeCoupon(docSnap.data() as Record<string, unknown>, docSnap.id)
+        );
+        setLiveCoupon(pickBestCouponForRoute(coupons, routeContext));
       },
       (error) => {
         console.error('Failed to load promo ticker coupon:', error);
@@ -165,13 +164,13 @@ export default function GlobalPromoTicker({ couponData }: { couponData?: PromoCo
     );
 
     return () => unsubscribe();
-  }, [isAdminRoute, couponData]);
+  }, [isAdminRoute, couponData, routeContext]);
 
-  const activeCoupon = couponData || liveCoupon;
+  const activeCoupon = couponData ? mapPropCoupon(couponData) : liveCoupon;
   const shouldTick = !isAdminRoute && !hiddenForSession && Boolean(activeCoupon);
-  const expiryMs = toMillis(activeCoupon?.expiry_timestamp ?? activeCoupon?.expiryTime);
+  const expiryMs = toMillis(activeCoupon?.expiryDate);
   const msRemaining = expiryMs - nowMs;
-  const isExpired = !activeCoupon || !expiryMs || msRemaining <= 0;
+  const isExpired = !activeCoupon || (Boolean(expiryMs) && msRemaining <= 0);
   const shouldRender = !isAdminRoute && !hiddenForSession && !isExpired;
 
   useEffect(() => {
@@ -210,7 +209,7 @@ export default function GlobalPromoTicker({ couponData }: { couponData?: PromoCo
     return () => {
       window.removeEventListener('resize', updateHeight);
     };
-  }, [shouldRender, activeCoupon?.code, activeCoupon?.type, activeCoupon?.targetName]);
+  }, [shouldRender, activeCoupon?.code, activeCoupon?.scope, activeCoupon?.productName, activeCoupon?.categoryName]);
 
   if (!shouldRender || !activeCoupon) {
     return null;
@@ -218,7 +217,7 @@ export default function GlobalPromoTicker({ couponData }: { couponData?: PromoCo
 
   const couponCode = activeCoupon.code;
   const promoText = getPromoText(activeCoupon);
-  const countdown = formatCountdown(msRemaining);
+  const countdown = expiryMs ? formatCountdown(msRemaining) : 'LIMITED';
 
   async function handleCopyCode() {
     try {

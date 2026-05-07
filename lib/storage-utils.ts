@@ -214,6 +214,7 @@ export interface UploadMediaOptions {
 
 export interface FetchMediaLibraryOptions {
   folder: UploadFolder;
+  folders?: UploadFolder[];
   limit?: number;
   search?: string;
   relatedType?: string;
@@ -285,6 +286,11 @@ export async function fetchMediaLibrary(options: FetchMediaLibraryOptions) {
   const params = new URLSearchParams();
   params.set('folder', options.folder);
   params.set('limit', String(Math.max(1, Math.min(200, Number(options.limit || 80)))));
+
+  const folders = Array.from(new Set(options.folders || []));
+  if (folders.length > 0) {
+    params.set('folders', folders.join(','));
+  }
 
   if (options.search?.trim()) {
     params.set('q', options.search.trim());

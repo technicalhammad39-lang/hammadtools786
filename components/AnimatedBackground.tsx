@@ -11,7 +11,7 @@ type SnowParticleConfig = {
   delay: number;
 };
 
-const SNOW_PARTICLE_COUNT = 10;
+const SNOW_PARTICLE_COUNT = 0;
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed * 9999.17) * 10000;

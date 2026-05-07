@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 const DEFAULT_LIMIT = 80;
 const MAX_LIMIT = 200;
-const MAX_SCAN_LIMIT = 600;
+const MAX_SCAN_LIMIT = 900;
 
 type MediaRecord = {
   id?: string;
@@ -144,6 +144,21 @@ function normalizeRecordFolder(value: unknown, fallback: UploadFolder) {
   }
 }
 
+function normalizeRequestedFolders(rawValue: string | null, fallback: UploadFolder) {
+  const raw = sanitizeText(rawValue, 500);
+  if (!raw) {
+    return [fallback];
+  }
+
+  const folders = raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => normalizeUploadFolder(entry));
+
+  return Array.from(new Set(folders.length ? folders : [fallback]));
+}
+
 function normalizeRecordAccess(value: unknown, folder: UploadFolder) {
   const candidate = sanitizeText(value, 40).toLowerCase();
   if (candidate === 'public' || candidate === 'protected') {
@@ -249,8 +264,13 @@ export async function GET(request: Request) {
     }
 
     const folder = normalizeUploadFolder(requestedFolder);
-    if (isUploadFolderStaffOnly(folder) && !isStaff) {
-      throw new ApiError(403, 'You do not have permission to access this media folder.');
+    const requestedFolders = normalizeRequestedFolders(url.searchParams.get('folders'), folder);
+    const folders = isStaff ? requestedFolders : [folder];
+
+    for (const currentFolder of folders) {
+      if (isUploadFolderStaffOnly(currentFolder) && !isStaff) {
+        throw new ApiError(403, 'You do not have permission to access this media folder.');
+      }
     }
 
     const limit = normalizeLimit(url.searchParams.get('limit'));
@@ -261,17 +281,17 @@ export async function GET(request: Request) {
     const relatedOrderId = sanitizeText(url.searchParams.get('relatedOrderId'), 220);
     const relatedProductId = sanitizeText(url.searchParams.get('relatedProductId'), 220);
 
-    if (folder === 'chat-attachments') {
+    if (folders.includes('chat-attachments')) {
       await assertOrderAccess(relatedOrderId, decoded.uid, isStaff);
     }
 
-    if (folder === 'payment-proofs' && !isStaff) {
+    if (folders.includes('payment-proofs') && !isStaff) {
       await assertOrderAccess(relatedOrderId, decoded.uid, isStaff);
     }
 
     const scanLimit = Math.max(
-      limit * 4,
-      folder === 'chat-attachments' || folder === 'payment-proofs' ? 300 : 220
+      limit * (folders.length > 1 ? 6 : 4),
+      folders.includes('chat-attachments') || folders.includes('payment-proofs') ? 300 : 220
     );
     const cappedScanLimit = Math.min(MAX_SCAN_LIMIT, scanLimit);
 
@@ -291,7 +311,7 @@ export async function GET(request: Request) {
       const data = docSnap.data() as MediaRecord;
       const item = toLibraryItem(docSnap.id, data, folder);
 
-      if (item.folder !== folder) {
+      if (!folders.includes(item.folder)) {
         return;
       }
 

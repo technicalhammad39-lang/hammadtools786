@@ -88,6 +88,7 @@ const Hero = () => {
           <div
             data-gsap-reveal="gsap"
             data-gsap-immediate="true"
+            data-gsap-skip="true"
             className="relative z-20 md:w-full md:max-w-4xl md:mx-auto md:flex md:flex-col md:items-center md:text-center lg:items-start lg:text-left lg:mx-0 lg:max-w-none"
           >
             <h1 className="mb-4 md:mb-6 text-brand-text text-left md:text-center lg:text-left">
@@ -115,6 +116,7 @@ const Hero = () => {
             <p
               data-gsap-reveal="gsap"
               data-gsap-immediate="true"
+              data-gsap-skip="true"
               className="mb-2 md:mb-3 text-left md:text-center lg:text-left"
             >
               <span className="block md:hidden text-white text-[clamp(1.45rem,6.6vw,2.05rem)] sm:text-[clamp(1.6rem,6vw,2.2rem)] font-black leading-[1.1]">
@@ -128,6 +130,7 @@ const Hero = () => {
             <p
               data-gsap-reveal="gsap"
               data-gsap-immediate="true"
+              data-gsap-skip="true"
               className="text-[12px] sm:text-[13px] md:text-2xl text-gray-300/90 md:text-brand-text/60 mt-1.5 md:mt-3 mb-5 md:mb-6 max-w-md sm:max-w-lg md:max-w-3xl leading-[1.55] md:leading-relaxed font-medium relative z-20 text-left md:text-center lg:text-left mx-0 md:mx-auto lg:mx-0"
             >
               Access Netflix, ChatGPT Plus, Canva Pro, and 50+ other premium content access at unbeatable prices. Fast, secure, and reliable.
@@ -190,6 +193,7 @@ const Hero = () => {
           <div
             data-gsap-reveal="gsap"
             data-gsap-immediate="true"
+            data-gsap-skip="true"
             className="relative z-10 hidden lg:flex justify-center items-center h-[530px]"
           >
             {/* Review Card 1 (Darker Yellow) */}
