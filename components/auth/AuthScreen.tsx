@@ -82,7 +82,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
   return (
     <main className="min-h-screen page-navbar-spacing pb-16 md:pb-20 bg-brand-bg">
       <div className="site-container-readable grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-8">
-        <section className="hidden lg:flex flex-col justify-between glass rounded-[2.2rem] border border-white/10 p-10 xl:p-12">
+        <section className="hidden lg:flex flex-col glass rounded-[2.2rem] border border-white/10 p-10 xl:p-12">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-primary">Secure Access</p>
             <h2 className="mt-4 text-5xl font-black uppercase leading-[0.95] text-brand-text">
@@ -93,7 +93,7 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
             </p>
           </div>
 
-          <div className="mt-8 mb-7 relative overflow-hidden rounded-[1.8rem] border border-primary/20 bg-black/20 shadow-2xl min-h-[230px]">
+          <div className="mt-8 relative flex-1 overflow-hidden rounded-[1.8rem] border border-primary/20 bg-black/20 shadow-2xl min-h-[360px] xl:min-h-[420px]">
             <Image
               src="/login-left.jpg"
               alt="Secure account access preview"
@@ -102,18 +102,6 @@ export default function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
               className="object-cover object-center"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/35" />
-          </div>
-
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-brand-text/80">
-              Real-time order tracking and chat
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-brand-text/80">
-              Secure checkout with verified proof flow
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-brand-text/80">
-              Direct access to account history
-            </div>
           </div>
         </section>
 

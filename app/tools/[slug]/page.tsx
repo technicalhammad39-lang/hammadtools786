@@ -10,6 +10,7 @@ import {
   createAutoPageMetadata,
   createPageMetadata,
   toAbsoluteSiteUrl,
+  toSlugFromTitle,
 } from '@/lib/seo';
 
 interface Plan {
@@ -75,7 +76,7 @@ function getMinPrice(service: Service) {
 }
 
 function getServiceSlug(service: Service) {
-  return (service.slug || service.name || '').toString().toLowerCase().trim().replace(/\s+/g, '-');
+  return toSlugFromTitle((service.slug || service.name || '').toString()) || service.id;
 }
 
 function getSeoDescription(service: Service, planLabel: string, minPrice: number) {
@@ -96,7 +97,7 @@ async function getService(slug: string): Promise<Service | null> {
     if (docSnap) {
       const data = docSnap.data();
       const serviceTitle = (data.title || data.name || '').toString();
-      const serviceSlug = (data.slug || serviceTitle.toLowerCase().replace(/ /g, '-')).toString();
+      const serviceSlug = toSlugFromTitle((data.slug || serviceTitle).toString()) || docSnap.id;
 
       if ((data.type || 'tools') !== 'tools' || data.active === false) {
         return null;
@@ -115,7 +116,7 @@ async function getService(slug: string): Promise<Service | null> {
     fallbackSnapshot.forEach((doc) => {
       const data = doc.data();
       const serviceTitle = (data.title || data.name || '').toString();
-      const derivedSlug = serviceTitle.toLowerCase().replace(/ /g, '-');
+      const derivedSlug = toSlugFromTitle(serviceTitle) || doc.id;
       if (derivedSlug === slug && (data.type || 'tools') === 'tools' && data.active !== false) {
         foundService = {
           id: doc.id,

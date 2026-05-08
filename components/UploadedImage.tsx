@@ -11,14 +11,10 @@ type UploadedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
   fallbackOnError?: boolean;
 };
 
-function resolvePreferredSource(value: string, fallback: string) {
-  return normalizeImageUrl(value) || fallback;
-}
-
 export default function UploadedImage({
   src,
   fallbackSrc = '/services-card.webp',
-  fallbackOnError = true,
+  fallbackOnError,
   alt,
   className,
   loading,
@@ -31,10 +27,13 @@ export default function UploadedImage({
     }
     return normalizeImageUrl(fallbackSrc) || '/services-card.webp';
   }, [fallbackSrc]);
+  const normalizedSource = useMemo(() => normalizeImageUrl(src), [src]);
   const preferred = useMemo(
-    () => resolvePreferredSource(src, normalizedFallback || ''),
-    [src, normalizedFallback]
+    () => normalizedSource || normalizedFallback || '',
+    [normalizedSource, normalizedFallback]
   );
+  const shouldFallbackOnError =
+    typeof fallbackOnError === 'boolean' ? fallbackOnError : !Boolean(normalizedSource);
 
   const [currentSrc, setCurrentSrc] = useState(preferred);
 
@@ -52,7 +51,7 @@ export default function UploadedImage({
       loading={resolvedLoading}
       decoding={decoding || 'async'}
       onError={() => {
-        if (!fallbackOnError || !normalizedFallback) {
+        if (!shouldFallbackOnError || !normalizedFallback) {
           return;
         }
         if (currentSrc !== normalizedFallback) {

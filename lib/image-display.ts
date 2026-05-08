@@ -102,6 +102,21 @@ function deriveUrlFromStoragePath(storagePath: string, mediaId: string, isProtec
   return '';
 }
 
+function extractEmbeddedUploadPath(value: string) {
+  const normalized = value.replace(/\\/g, '/');
+  const publicMatch = normalized.match(/(?:^|\/)public\/uploads\/(.+)$/i);
+  if (publicMatch?.[1]) {
+    return `/uploads/${publicMatch[1].replace(/^\/+/, '')}`;
+  }
+
+  const storageMatch = normalized.match(/(?:^|\/)storage\/uploads\/(.+)$/i);
+  if (storageMatch?.[1]) {
+    return '';
+  }
+
+  return '';
+}
+
 export function getMediaUrl(media: unknown): string {
   if (typeof media === 'string') {
     return media.trim();
@@ -176,6 +191,11 @@ export function normalizeImageUrl(input: unknown): string {
     return '';
   }
   value = value.replace(/\\/g, '/');
+
+  const embeddedUploadPath = extractEmbeddedUploadPath(value);
+  if (embeddedUploadPath || /(?:^|\/)storage\/uploads\//i.test(value)) {
+    return embeddedUploadPath;
+  }
 
   // Recover malformed absolute URLs such as `https:/domain/path`.
   if (MALFORMED_ABSOLUTE_HTTP_REGEX.test(value)) {

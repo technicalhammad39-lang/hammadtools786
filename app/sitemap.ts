@@ -139,6 +139,27 @@ async function getBlogEntries() {
   }
 }
 
+async function getCategoryEntries() {
+  if (!hasFirebaseAdminCredentials()) {
+    return [] as Array<{ slug: string; lastModified: Date }>;
+  }
+
+  try {
+    const snapshot = await withTimeout(
+      adminDb.collection('categories').get(),
+      SITEMAP_FIRESTORE_TIMEOUT_MS,
+      'sitemap/categories fetch'
+    );
+    return snapshot.docs
+      .map((entry) => entry.data() as CollectionDoc)
+      .filter((item) => item.active !== false && ((item.type || 'tools') === 'tools' || item.type === 'both'))
+      .map((item) => ({ slug: slugFromDoc(item), lastModified: asDate(item.updatedAt || item.createdAt) }))
+      .filter((item) => Boolean(item.slug));
+  } catch {
+    return [] as Array<{ slug: string; lastModified: Date }>;
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -153,10 +174,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: withSite('/terms'), lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
   ];
 
-  const [toolEntries, blogEntries, agencyServiceEntries] = await Promise.all([
+  const [toolEntries, blogEntries, agencyServiceEntries, categoryEntries] = await Promise.all([
     getToolEntries(),
     getBlogEntries(),
     getAgencyServiceEntries(),
+    getCategoryEntries(),
   ]);
   const toolRoutes: MetadataRoute.Sitemap = toolEntries.map((entry) => ({
     url: withSite(`/tools/${entry.slug}`),
@@ -176,9 +198,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
     priority: 0.75,
   }));
+  const categoryRoutes: MetadataRoute.Sitemap = categoryEntries.map((entry) => ({
+    url: withSite(`/tools/category/${entry.slug}`),
+    lastModified: entry.lastModified,
+    changeFrequency: 'weekly',
+    priority: 0.82,
+  }));
 
   const deduped = new Map<string, MetadataRoute.Sitemap[number]>();
-  [...staticRoutes, ...toolRoutes, ...agencyServiceRoutes, ...blogRoutes].forEach((entry) => {
+  [...staticRoutes, ...toolRoutes, ...agencyServiceRoutes, ...blogRoutes, ...categoryRoutes].forEach((entry) => {
     deduped.set(entry.url, entry);
   });
   return Array.from(deduped.values());

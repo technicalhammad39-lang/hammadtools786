@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { normalizeImageUrl } from '@/lib/image-display';
 import { adminDb } from '@/lib/server/firebase-admin';
 import { canManageUploads, requireAuth } from '@/lib/server/auth';
 import { ApiError, jsonError } from '@/lib/server/http';
@@ -38,10 +39,6 @@ type MediaRecord = {
   createdAt?: any;
 };
 
-const HOSTINGER_PUBLIC_UPLOAD_PREFIX = '/public/uploads/';
-const HOSTINGER_PRIVATE_UPLOAD_PREFIX = '/storage/uploads/';
-const MALFORMED_ABSOLUTE_HTTP_REGEX = /^(https?):\/(?!\/)/i;
-
 function sanitizeText(value: unknown, maxLength = 300) {
   if (typeof value !== 'string') {
     return '';
@@ -50,55 +47,7 @@ function sanitizeText(value: unknown, maxLength = 300) {
 }
 
 function normalizeMediaUrl(value: string) {
-  let raw = sanitizeText(value, 2000);
-  if (!raw) {
-    return '';
-  }
-
-  if (MALFORMED_ABSOLUTE_HTTP_REGEX.test(raw)) {
-    raw = raw.replace(MALFORMED_ABSOLUTE_HTTP_REGEX, '$1://');
-  }
-
-  if (raw.startsWith('/uploads/') || raw.startsWith('/api/upload/')) {
-    return raw;
-  }
-
-  if (raw.startsWith('uploads/')) {
-    return `/${raw}`;
-  }
-
-  if (/^https?:\/\//i.test(raw)) {
-    try {
-      const parsed = new URL(raw);
-      if (parsed.pathname.startsWith(HOSTINGER_PUBLIC_UPLOAD_PREFIX)) {
-        return parsed.pathname.replace(HOSTINGER_PUBLIC_UPLOAD_PREFIX, '/uploads/');
-      }
-      if (parsed.pathname.startsWith(HOSTINGER_PRIVATE_UPLOAD_PREFIX)) {
-        return '';
-      }
-      if (parsed.pathname.startsWith('/uploads/') || parsed.pathname.startsWith('/api/upload/')) {
-        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-      }
-      return parsed.toString();
-    } catch {
-      return '';
-    }
-  }
-
-  if (raw.startsWith(HOSTINGER_PUBLIC_UPLOAD_PREFIX)) {
-    return raw.replace(HOSTINGER_PUBLIC_UPLOAD_PREFIX, '/uploads/');
-  }
-  if (raw.startsWith(HOSTINGER_PRIVATE_UPLOAD_PREFIX)) {
-    return '';
-  }
-  if (raw.startsWith('public/uploads/')) {
-    return `/${raw.slice('public/'.length)}`;
-  }
-  if (raw.startsWith('storage/uploads/')) {
-    return '';
-  }
-
-  return raw.startsWith('/') ? raw : `/${raw}`;
+  return normalizeImageUrl(sanitizeText(value, 2000));
 }
 
 function normalizeLimit(raw: string | null) {

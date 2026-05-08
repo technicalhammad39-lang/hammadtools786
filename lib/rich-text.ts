@@ -136,7 +136,7 @@ function parseStyleMap(value: string) {
     }, {});
 }
 
-function transformSpanLikeAttributes(attribs: Record<string, string>) {
+function readInlineRichFlags(attribs: Record<string, string>) {
   const styles = parseStyleMap(String(attribs.style || ''));
   const color =
     normalizeRichColor(String(attribs['data-rich-color'] || '')) ||
@@ -146,45 +146,72 @@ function transformSpanLikeAttributes(attribs: Record<string, string>) {
     normalizeRichSize(String(attribs['data-rich-size'] || '')) ||
     normalizeRichSize(String(attribs.size || '')) ||
     normalizeRichSize(styles['font-size'] || '');
+  const fontWeight = String(styles['font-weight'] || '').toLowerCase();
+  const fontStyle = String(styles['font-style'] || '').toLowerCase();
+  const textDecoration = `${styles['text-decoration'] || ''} ${styles['text-decoration-line'] || ''}`.toLowerCase();
+  const bold =
+    String(attribs['data-rich-bold'] || '').toLowerCase() === 'true' ||
+    fontWeight === 'bold' ||
+    fontWeight === 'bolder' ||
+    Number(fontWeight) >= 600;
+  const italic =
+    String(attribs['data-rich-italic'] || '').toLowerCase() === 'true' ||
+    fontStyle === 'italic' ||
+    fontStyle === 'oblique';
+  const underline =
+    String(attribs['data-rich-underline'] || '').toLowerCase() === 'true' ||
+    textDecoration.includes('underline');
+
+  return {
+    color,
+    size,
+    bold,
+    italic,
+    underline,
+  };
+}
+
+function transformSpanLikeAttributes(attribs: Record<string, string>) {
+  const formatting = readInlineRichFlags(attribs);
 
   const nextAttribs: Record<string, string> = {};
-  if (color) {
-    nextAttribs['data-rich-color'] = color;
+  if (formatting.color) {
+    nextAttribs['data-rich-color'] = formatting.color;
   }
-  if (size && size !== 'medium') {
-    nextAttribs['data-rich-size'] = size;
+  if (formatting.size && formatting.size !== 'medium') {
+    nextAttribs['data-rich-size'] = formatting.size;
+  }
+  if (formatting.bold) {
+    nextAttribs['data-rich-bold'] = 'true';
+  }
+  if (formatting.italic) {
+    nextAttribs['data-rich-italic'] = 'true';
+  }
+  if (formatting.underline) {
+    nextAttribs['data-rich-underline'] = 'true';
   }
   return nextAttribs;
 }
 
 function resolveStyledInlineTag(attribs: Record<string, string>) {
-  const styles = parseStyleMap(String(attribs.style || ''));
-  const hasColorOrSize = Boolean(
-    normalizeRichColor(String(attribs['data-rich-color'] || '')) ||
-      normalizeRichColor(String(attribs.color || '')) ||
-      normalizeRichColor(styles.color || '') ||
-      normalizeRichSize(String(attribs['data-rich-size'] || '')) ||
-      normalizeRichSize(String(attribs.size || '')) ||
-      normalizeRichSize(styles['font-size'] || '')
-  );
+  const formatting = readInlineRichFlags(attribs);
+  const hasColorOrSize = Boolean(formatting.color || formatting.size);
+  const emphasisCount =
+    Number(formatting.bold) + Number(formatting.italic) + Number(formatting.underline);
 
-  if (hasColorOrSize) {
+  if (hasColorOrSize || emphasisCount !== 1) {
     return '';
   }
 
-  const fontWeight = String(styles['font-weight'] || '').toLowerCase();
-  const fontStyle = String(styles['font-style'] || '').toLowerCase();
-  const textDecoration = `${styles['text-decoration'] || ''} ${styles['text-decoration-line'] || ''}`.toLowerCase();
-
-  if (fontWeight === 'bold' || fontWeight === 'bolder' || Number(fontWeight) >= 600) {
+  if (formatting.bold) {
     return 'strong';
   }
 
-  if (fontStyle === 'italic' || fontStyle === 'oblique') {
+  if (formatting.italic) {
     return 'em';
   }
 
-  if (textDecoration.includes('underline')) {
+  if (formatting.underline) {
     return 'u';
   }
 
@@ -394,7 +421,13 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: [...RICH_TEXT_ALLOWED_ELEMENTS],
   allowedAttributes: {
     a: ['href', 'title', 'target', 'rel'],
-    span: ['data-rich-color', 'data-rich-size'],
+    span: [
+      'data-rich-color',
+      'data-rich-size',
+      'data-rich-bold',
+      'data-rich-italic',
+      'data-rich-underline',
+    ],
   },
   allowedSchemes: ['http', 'https', 'mailto', 'tel'],
   selfClosing: ['br', 'hr'],

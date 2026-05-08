@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowRight, CalendarDays } from 'lucide-react';
 import {
   formatBlogPublishDate,
@@ -7,6 +6,7 @@ import {
 } from '@/lib/blog';
 import { toSeoPlainText } from '@/lib/seo';
 import { resolveImageSource } from '@/lib/image-display';
+import UploadedImage from '@/components/UploadedImage';
 
 type BlogCardProps = {
   post: BlogPostDocument;
@@ -27,13 +27,11 @@ export default function BlogCard({ post, compact = false }: BlogCardProps) {
     <article className="group h-full overflow-hidden rounded-[1.55rem] border border-white/10 bg-gradient-to-b from-[#1A1A1A] via-[#151515] to-[#101010] shadow-[0_18px_45px_rgba(0,0,0,0.45)] hover:border-primary/35 transition-colors">
       <Link href={`/blogs/${post.slug}`} className="block" aria-label={`Read ${post.title}`}>
         <div className={`relative overflow-hidden border-b border-white/10 ${compact ? 'h-48 sm:h-52' : 'h-52 sm:h-56 md:h-60'}`}>
-          <Image
+          <UploadedImage
             src={coverImageUrl}
             alt={post.title}
-            fill
-            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-            unoptimized={coverImageUrl.startsWith('http')}
+            fallbackSrc="/services-card.webp"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
           <span className="absolute left-4 top-4 inline-flex items-center rounded-full border border-primary/35 bg-black/70 px-3 py-1 text-[10px] font-bold tracking-[0.01em] text-primary backdrop-blur-md">

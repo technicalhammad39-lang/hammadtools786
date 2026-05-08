@@ -521,3 +521,42 @@ Current validation status after this audit:
   - `/giveaway`
   - `/admin/blog`
 
+## 26) 2026-05-08 Launch-Final Fixes
+
+Final launch-grade fixes applied after the production audit:
+
+- Hostinger/public upload strategy:
+  - canonical public image path remains `/uploads/...`
+  - `lib/image-display.ts` is the shared normalization layer for:
+    - `publicPath`
+    - `fileUrl`
+    - `url`
+    - legacy embedded filesystem paths like `/public/uploads/...`
+  - runtime upload serving should prefer real public webroot/static serving over middleware rewrites
+  - temporary `/uploads` rewrite proxy was removed because it added latency and could interfere with direct static delivery
+  - `lib/server/local-upload.ts` now normalizes absolute `HOSTINGER_UPLOAD_PUBLIC_BASE` values back to a site-relative `/uploads` path so previews do not accidentally point at the live production domain during local/admin work
+  - on Windows local development, Linux-style Hostinger filesystem roots such as `/home/...` now fall back to local `public/uploads` and `storage/uploads` directories automatically
+- standalone/runtime upload behavior:
+  - `scripts/prepare-standalone.mjs` copies `public/` into `.next/standalone/public`
+  - runtime uploads in standalone resolve relative to `process.cwd()` which becomes `.next/standalone`
+  - result: uploads written during runtime land in `.next/standalone/public/uploads/...` and are directly servable by the standalone server
+  - for persistent Hostinger deploys, `HOSTINGER_PUBLIC_UPLOAD_ROOT` should point at the real public uploads directory and `HOSTINGER_UPLOAD_PUBLIC_BASE` should stay `/uploads`
+- rich text bold/formatting root cause:
+  - sanitizer previously dropped `font-weight` when text also carried color/size styles
+  - fixed in `lib/rich-text.ts` by preserving compound inline formatting with:
+    - `data-rich-bold`
+    - `data-rich-italic`
+    - `data-rich-underline`
+    - existing `data-rich-color`
+    - existing `data-rich-size`
+  - `app/globals.css` now styles these attributes in both editor and published frontend
+  - `strong`/`b` no longer force white text, so colored bold text keeps its selected color
+- SEO helper improvements:
+  - `lib/seo.ts` now avoids duplicate site-name suffixes when a page title already contains `Hammad Tools`
+  - this prevents bad titles like `... | Hammad Tools | Hammad Tools`
+- category SEO/UX cleanup:
+  - `app/tools/category/[slug]/page.tsx` now avoids duplicate labels such as `Design Tools Tools`
+  - metadata + hero heading both use a normalized category label
+- blog schema rendering:
+  - `app/blogs/[slug]/page.tsx` now sends plain-text `articleBody` to schema instead of raw rich-text HTML
+

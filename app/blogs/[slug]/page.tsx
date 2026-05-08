@@ -2,9 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CalendarDays, ChevronRight } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
 import {
   buildSeoDescription,
   createAutoPageMetadata,
@@ -18,14 +15,9 @@ import { resolveImageSource, toMetadataImageUrl } from '@/lib/image-display';
 import { getBlogPostBySlug, getPublishedBlogPosts } from '@/lib/server/blog-posts';
 import { adminDb } from '@/lib/server/firebase-admin';
 import BlogCard from '@/components/blog/BlogCard';
+import RichTextContent from '@/components/RichTextContent';
 import UploadedImage from '@/components/UploadedImage';
-import {
-  buildBlogRelValue,
-  isExternalBlogHref,
-  parseBlogLinkMeta,
-  sanitizeBlogHref,
-} from '@/lib/blog-links';
-import { autoLinkPlainUrls, RICH_TEXT_ALLOWED_ELEMENTS } from '@/lib/rich-text';
+import { richTextToPlainText } from '@/lib/rich-text';
 
 type PageParams = { slug: string };
 
@@ -76,20 +68,6 @@ export async function generateMetadata({
 }
 
 export const dynamic = 'force-dynamic';
-
-function richSpanClassName(props: Record<string, unknown>) {
-  const color = String(props['data-rich-color'] || '').toLowerCase();
-  const size = String(props['data-rich-size'] || '').toLowerCase();
-  const classes = [];
-
-  if (color === 'yellow') classes.push('text-primary');
-  if (color === 'grey' || color === 'gray') classes.push('text-brand-text/55');
-  if (color === 'white') classes.push('text-brand-text');
-  if (size === 'small') classes.push('text-sm');
-  if (size === 'large') classes.push('text-xl md:text-2xl');
-
-  return classes.join(' ');
-}
 
 export default async function BlogDetailPage({ params }: { params: Promise<PageParams> }) {
   const { slug } = await params;
@@ -153,7 +131,7 @@ export default async function BlogDetailPage({ params }: { params: Promise<PageP
     image: [schemaImage],
     datePublished: toIsoDate(publishedAt),
     dateModified: toIsoDate(post.updatedAt || publishedAt),
-    articleBody: post.content,
+    articleBody: richTextToPlainText(post.content),
     author: {
       '@type': 'Person',
       name: authorDisplayName,
@@ -215,50 +193,10 @@ export default async function BlogDetailPage({ params }: { params: Promise<PageP
             </div>
 
             {post.shortDescription ? (
-              <div className="mt-4 text-center text-base md:text-lg leading-relaxed text-brand-text/72 max-w-4xl mx-auto">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeRaw]}
-                  allowedElements={[...RICH_TEXT_ALLOWED_ELEMENTS]}
-                  components={{
-                    p: ({ children }) => (
-                      <p className="whitespace-pre-wrap leading-relaxed text-brand-text/72 my-2">
-                        {children}
-                      </p>
-                    ),
-                    span: ({ children, ...props }) => (
-                      <span className={richSpanClassName(props as Record<string, unknown>)}>{children}</span>
-                    ),
-                    u: ({ children }) => <u className="underline underline-offset-4 decoration-primary/70">{children}</u>,
-                    a: ({ href, title, children, ...props }) => {
-                      const safeHref = sanitizeBlogHref(href);
-                      const linkMeta = parseBlogLinkMeta(title);
-                      const external = isExternalBlogHref(safeHref);
-                      const openInNewTab = external || linkMeta.openInNewTab;
-                      const rel = buildBlogRelValue({
-                        external,
-                        nofollow: linkMeta.nofollow,
-                        openInNewTab,
-                      });
-
-                      return (
-                        <a
-                          href={safeHref}
-                          title={linkMeta.title}
-                          target={openInNewTab ? '_blank' : undefined}
-                          rel={rel}
-                          className="text-primary underline underline-offset-4"
-                          {...props}
-                        >
-                          {children}
-                        </a>
-                      );
-                    },
-                  }}
-                >
-                  {autoLinkPlainUrls(post.shortDescription)}
-                </ReactMarkdown>
-              </div>
+              <RichTextContent
+                value={post.shortDescription}
+                className="mt-4 mx-auto max-w-4xl text-center text-base md:text-lg leading-relaxed text-brand-text/72"
+              />
             ) : null}
           </article>
         </header>
@@ -273,48 +211,10 @@ export default async function BlogDetailPage({ params }: { params: Promise<PageP
         </section>
 
         <section className="mt-8 md:mt-10 p-0 sm:p-1 md:p-2">
-          <div className="prose prose-invert max-w-none prose-headings:text-brand-text prose-headings:font-black prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3 prose-p:text-brand-text/82 prose-p:leading-8 prose-p:my-5 prose-li:text-brand-text/80 prose-li:leading-8 prose-li:my-1 prose-ul:my-5 prose-ol:my-5 prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-brand-text">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
-              allowedElements={[...RICH_TEXT_ALLOWED_ELEMENTS]}
-              components={{
-                p: ({ children }) => (
-                  <p className="whitespace-pre-wrap leading-8 text-brand-text/82">{children}</p>
-                ),
-                span: ({ children, ...props }) => (
-                  <span className={richSpanClassName(props as Record<string, unknown>)}>{children}</span>
-                ),
-                u: ({ children }) => <u className="underline underline-offset-4 decoration-primary/70">{children}</u>,
-                a: ({ href, title, children, ...props }) => {
-                  const safeHref = sanitizeBlogHref(href);
-                  const linkMeta = parseBlogLinkMeta(title);
-                  const external = isExternalBlogHref(safeHref);
-                  const openInNewTab = external || linkMeta.openInNewTab;
-                  const rel = buildBlogRelValue({
-                    external,
-                    nofollow: linkMeta.nofollow,
-                    openInNewTab,
-                  });
-
-                  return (
-                    <a
-                      href={safeHref}
-                      title={linkMeta.title}
-                      target={openInNewTab ? '_blank' : undefined}
-                      rel={rel}
-                      className="text-primary underline-offset-4"
-                      {...props}
-                    >
-                      {children}
-                    </a>
-                  );
-                },
-              }}
-            >
-              {autoLinkPlainUrls(post.content)}
-            </ReactMarkdown>
-          </div>
+          <RichTextContent
+            value={post.content}
+            className="text-brand-text/82 leading-8"
+          />
         </section>
 
         {relatedPosts.length ? (

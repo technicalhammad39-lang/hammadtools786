@@ -185,6 +185,19 @@ function getPathWithinWorkspace(configuredPath: string) {
   return resolve(join(process.cwd(), configuredPath));
 }
 
+function getDefaultPublicUploadRootDirectory() {
+  return resolve(join(process.cwd(), 'public', 'uploads'));
+}
+
+function getDefaultPrivateUploadRootDirectory() {
+  return resolve(join(process.cwd(), 'storage', 'uploads'));
+}
+
+function shouldUseLocalHostingerPathFallback(configuredPath: string) {
+  const normalized = (configuredPath || '').trim().replace(/\\/g, '/');
+  return process.platform === 'win32' && normalized.startsWith('/home/');
+}
+
 function isPathWithinRoot(rootPath: string, targetPath: string) {
   const normalizedRoot = resolve(rootPath);
   const normalizedTarget = resolve(targetPath);
@@ -195,7 +208,10 @@ function isPathWithinRoot(rootPath: string, targetPath: string) {
 export function getPublicUploadRootDirectory() {
   const configuredRoot = process.env.HOSTINGER_PUBLIC_UPLOAD_ROOT?.trim();
   if (!configuredRoot) {
-    return resolve(join(process.cwd(), 'public', 'uploads'));
+    return getDefaultPublicUploadRootDirectory();
+  }
+  if (shouldUseLocalHostingerPathFallback(configuredRoot)) {
+    return getDefaultPublicUploadRootDirectory();
   }
   return getPathWithinWorkspace(configuredRoot);
 }
@@ -203,7 +219,10 @@ export function getPublicUploadRootDirectory() {
 export function getPrivateUploadRootDirectory() {
   const configuredRoot = process.env.HOSTINGER_PRIVATE_UPLOAD_ROOT?.trim();
   if (!configuredRoot) {
-    return resolve(join(process.cwd(), 'storage', 'uploads'));
+    return getDefaultPrivateUploadRootDirectory();
+  }
+  if (shouldUseLocalHostingerPathFallback(configuredRoot)) {
+    return getDefaultPrivateUploadRootDirectory();
   }
   return getPathWithinWorkspace(configuredRoot);
 }
@@ -214,10 +233,14 @@ export function getUploadPublicBasePath() {
     return '/uploads';
   }
 
-  // Allow absolute URL bases (for example: https://example.com/uploads)
-  // without forcing an extra leading slash.
   if (/^https?:\/\//i.test(configured)) {
-    return configured.replace(/\/+$/, '');
+    try {
+      const parsed = new URL(configured);
+      const pathname = parsed.pathname.replace(/\/+$/, '');
+      return pathname || '/uploads';
+    } catch {
+      return '/uploads';
+    }
   }
 
   const withSlash = configured.startsWith('/') ? configured : `/${configured}`;
@@ -530,6 +553,55 @@ export function getPublicFilePath(folder: UploadFolder, fileName: string) {
 
 export function getProtectedMediaPath(mediaId: string) {
   return `/api/upload/${encodeURIComponent(mediaId)}`;
+}
+
+export function getAbsolutePublicFilePathFromSegments(segments: string[]) {
+  const uploadRoot = getPublicUploadRootDirectory();
+  const safeSegments = segments
+    .map((segment) => String(segment || '').trim())
+    .filter(Boolean);
+
+  if (!safeSegments.length) {
+    throw new ApiError(400, 'Upload path is required.');
+  }
+
+  if (safeSegments.some((segment) => segment === '.' || segment === '..' || segment.includes('\\'))) {
+    throw new ApiError(400, 'Unsafe upload path.');
+  }
+
+  const absolute = resolve(join(uploadRoot, ...safeSegments));
+  if (!isPathWithinRoot(uploadRoot, absolute)) {
+    throw new ApiError(400, 'Unsafe upload path.');
+  }
+
+  return absolute;
+}
+
+export function getUploadMimeType(fileName: string) {
+  const extension = extname(fileName || '').toLowerCase();
+  switch (extension) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.png':
+      return 'image/png';
+    case '.webp':
+      return 'image/webp';
+    case '.avif':
+      return 'image/avif';
+    case '.gif':
+      return 'image/gif';
+    case '.bmp':
+      return 'image/bmp';
+    case '.svg':
+      return 'image/svg+xml';
+    case '.ico':
+      return 'image/x-icon';
+    case '.pdf':
+      return 'application/pdf';
+    default:
+      return 'application/octet-stream';
+  }
 }
 
 export function getAbsoluteFilePathFromStoragePath(storagePath: string, access: UploadAccess) {

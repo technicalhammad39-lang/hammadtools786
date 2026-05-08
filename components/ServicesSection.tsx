@@ -10,18 +10,18 @@ import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { Category, ProductItem } from '@/lib/types/domain';
 import { resolveImageSource } from '@/lib/image-display';
 import UploadedImage from '@/components/UploadedImage';
+import { toSlugFromTitle } from '@/lib/seo';
 
 function getTitle(service: ProductItem) {
   return service.title || service.name || 'Untitled Product';
 }
 
 function getSlug(service: ProductItem) {
-  const slug = service.slug || getTitle(service);
-  return slug.toLowerCase().replace(/\s+/g, '-');
+  return toSlugFromTitle(String(service.slug || getTitle(service))) || service.id;
 }
 
 function getPrice(service: ProductItem) {
@@ -42,8 +42,13 @@ function toPlainPreview(value: string) {
     .trim();
 }
 
-const ServicesSection = () => {
+type ServicesSectionProps = {
+  initialCategorySlug?: string;
+};
+
+const ServicesSection = ({ initialCategorySlug = '' }: ServicesSectionProps) => {
   const { addToCart } = useCart();
+  const router = useRouter();
   const [services, setServices] = useState<ProductItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +56,9 @@ const ServicesSection = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState<'order' | 'price-low' | 'price-high'>('order');
   const pathname = usePathname();
+  const normalizedInitialCategorySlug = initialCategorySlug.trim().toLowerCase();
+  const isCatalogRoute = pathname?.startsWith('/tools');
+  const isCategoryLandingPage = pathname?.startsWith('/tools/category/');
   const categoryScrollerRef = useRef<HTMLDivElement | null>(null);
   const categoryDragRef = useRef({
     active: false,
@@ -102,6 +110,21 @@ const ServicesSection = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!normalizedInitialCategorySlug || !categories.length) {
+      return;
+    }
+
+    const matchedCategory = categories.find((category) => {
+      const candidateSlug = String(category.slug || category.name || '').trim().toLowerCase();
+      return candidateSlug === normalizedInitialCategorySlug;
+    });
+
+    if (matchedCategory?.id) {
+      setSelectedCategory((prev) => (prev === matchedCategory.id ? prev : matchedCategory.id));
+    }
+  }, [categories, normalizedInitialCategorySlug]);
+
   const filteredServices = useMemo(() => {
     return services
       .filter((service) => {
@@ -126,6 +149,36 @@ const ServicesSection = () => {
   }, [services, searchQuery, selectedCategory, sortBy]);
 
   const displayServices = pathname === '/' ? filteredServices.slice(0, 6) : filteredServices;
+
+  function syncCategoryRoute(nextCategoryId: string) {
+    if (!isCatalogRoute) {
+      return;
+    }
+
+    if (nextCategoryId === 'all') {
+      if (isCategoryLandingPage) {
+        router.replace('/tools', { scroll: false });
+      }
+      return;
+    }
+
+    if (!isCategoryLandingPage) {
+      return;
+    }
+
+    const category = categories.find((entry) => entry.id === nextCategoryId);
+    const categorySlug = toSlugFromTitle(String(category?.slug || category?.name || ''));
+    if (!categorySlug) {
+      return;
+    }
+
+    router.replace(`/tools/category/${categorySlug}`, { scroll: false });
+  }
+
+  function applyCategorySelection(nextCategoryId: string) {
+    setSelectedCategory(nextCategoryId);
+    syncCategoryRoute(nextCategoryId);
+  }
 
   const handleCategoryPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) {
@@ -234,7 +287,7 @@ const ServicesSection = () => {
           </div>
         </div>
 
-        {pathname === '/tools' && (
+        {isCatalogRoute && (
           <div
             data-gsap-reveal="gsap"
             className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 mb-6 md:mb-16 items-center"
@@ -264,7 +317,7 @@ const ServicesSection = () => {
                   if (shouldIgnoreCategoryClick(event)) {
                     return;
                   }
-                  setSelectedCategory('all');
+                  applyCategorySelection('all');
                 }}
                 className={`whitespace-nowrap px-4 md:px-6 py-2.5 md:py-4 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest border transition-all ${selectedCategory === 'all'
                   ? 'bg-primary border-primary text-black shadow-lg shadow-primary/20'
@@ -280,7 +333,7 @@ const ServicesSection = () => {
                     if (shouldIgnoreCategoryClick(event)) {
                       return;
                     }
-                    setSelectedCategory(category.id);
+                    applyCategorySelection(category.id);
                   }}
                   className={`whitespace-nowrap px-4 md:px-6 py-2.5 md:py-4 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest border transition-all ${selectedCategory === category.id
                     ? 'bg-primary border-primary text-black shadow-lg shadow-primary/20'

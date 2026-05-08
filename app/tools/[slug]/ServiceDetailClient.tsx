@@ -26,6 +26,7 @@ import type { StoredFileMetadata } from '@/lib/types/domain';
 import UploadedImage from '@/components/UploadedImage';
 import { useAuth } from '@/context/AuthContext';
 import RichTextContent from '@/components/RichTextContent';
+import { toSlugFromTitle } from '@/lib/seo';
 
 interface Plan {
   planName: string;
@@ -72,7 +73,7 @@ interface ReviewRecord {
 
 function buildServiceSlug(service: Service) {
   const source = (service.slug || service.name || service.id || '').toString();
-  return source.toLowerCase().trim().replace(/\s+/g, '-');
+  return toSlugFromTitle(source) || service.id;
 }
 
 function timestampToMillis(value: any) {

@@ -157,9 +157,10 @@ export function createPageMetadata({
   const fullDescription = normalizeText(description);
   const imageUrl = image.startsWith('http') ? image : toAbsoluteSiteUrl(image);
   const keywordList = mergeKeywords(CORE_KEYWORDS, keywords);
+  const hasSiteNameInTitle = fullTitle.toLowerCase().includes(SITE_NAME.toLowerCase());
 
   return {
-    title: fullTitle,
+    title: hasSiteNameInTitle ? { absolute: fullTitle } : fullTitle,
     description: fullDescription,
     keywords: keywordList,
     alternates: {

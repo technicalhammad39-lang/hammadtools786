@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { collection, limit, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { toSlugFromTitle } from '@/lib/seo';
 
 type SearchResult = {
   id: string;
@@ -87,7 +88,7 @@ const Navbar = () => {
             const data = entry.data() as Record<string, any>;
             if ((data.active === false) || ((data.type || 'tools') !== 'tools')) return;
             const title = String(data.title || data.name || 'Tool');
-            const slug = String(data.slug || title.toLowerCase().replace(/\s+/g, '-'));
+            const slug = toSlugFromTitle(String(data.slug || title)) || entry.id;
             const haystack = `${title} ${data.description || ''} ${data.categoryName || data.category || ''}`.toLowerCase();
             if (haystack.includes(needle)) {
               resultMap.set(`tool-${entry.id}`, {
@@ -109,7 +110,7 @@ const Navbar = () => {
             const published = data.published === true || String(data.status || '').toLowerCase() === 'published';
             if (!published) return;
             const title = String(data.title || 'Blog');
-            const slug = String(data.slug || title.toLowerCase().replace(/\s+/g, '-'));
+            const slug = toSlugFromTitle(String(data.slug || title)) || entry.id;
             const haystack = `${title} ${data.shortDescription || data.excerpt || data.content || ''}`.toLowerCase();
             if (haystack.includes(needle)) {
               resultMap.set(`blog-${entry.id}`, {
