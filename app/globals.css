@@ -660,6 +660,133 @@ select option:checked {
   animation: reviewSheetEnter 220ms ease-out;
 }
 
+@keyframes premiumVisionFloat {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(1.4deg) rotateY(-1.8deg) translateY(-6px);
+  }
+}
+
+@keyframes premiumVisionSweep {
+  0% {
+    transform: translateX(-130%) rotate(12deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateX(130%) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+.about-vision-premium {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 214, 0, 0.18), transparent 34%),
+    radial-gradient(circle at 88% 22%, rgba(255, 140, 42, 0.14), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.026) 44%, rgba(0, 0, 0, 0.22));
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 0 0 1px rgba(255, 214, 0, 0.08);
+  transform-style: preserve-3d;
+  animation: premiumVisionFloat 7s ease-in-out infinite;
+}
+
+.about-vision-premium::before {
+  content: '';
+  position: absolute;
+  inset: -40% auto -40% -26%;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  animation: premiumVisionSweep 5.6s ease-in-out infinite;
+}
+
+.about-vision-premium::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 214, 0, 0.22), transparent 32%, rgba(255, 255, 255, 0.08) 70%, transparent);
+  opacity: 0.36;
+}
+
+.about-vision-icon {
+  transform: translateZ(28px);
+}
+
+.agency-services-hero,
+.service-detail-hero {
+  transform-style: preserve-3d;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.agency-service-card {
+  transform-style: preserve-3d;
+}
+
+.agency-service-card:hover {
+  transform: perspective(1100px) translateY(-8px) rotateX(2deg) rotateY(-2deg);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.45),
+    0 18px 44px color-mix(in srgb, var(--service-accent, #FFD600) 18%, transparent);
+}
+
+.agency-service-card-glow {
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--service-accent, #FFD600) 24%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--service-accent, #FFD600) 12%, transparent), transparent 44%);
+}
+
+.agency-generated-visual {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.28), transparent 18%),
+    radial-gradient(circle at 76% 24%, color-mix(in srgb, var(--service-accent, #FFD600) 38%, transparent), transparent 28%),
+    radial-gradient(circle at 44% 88%, rgba(0, 0, 0, 0.38), transparent 36%),
+    var(--service-gradient, linear-gradient(135deg, #FFD600 0%, #FF8C2A 48%, #111827 100%));
+}
+
+.agency-generated-visual::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+  opacity: 0.22;
+}
+
+.agency-generated-visual::after {
+  content: '';
+  position: absolute;
+  inset: 12% -18% auto auto;
+  width: 58%;
+  height: 58%;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 0 44px rgba(255, 255, 255, 0.08);
+  transform: rotate(-18deg);
+}
+
+.service-detail-visual {
+  transform-style: preserve-3d;
+}
+
+.service-detail-visual:hover {
+  transform: perspective(1100px) rotateX(1.6deg) rotateY(-2deg) translateY(-4px);
+  box-shadow:
+    0 34px 100px rgba(0, 0, 0, 0.5),
+    0 20px 54px color-mix(in srgb, var(--service-accent, #FFD600) 16%, transparent);
+}
+
 @media (max-width: 1279px) {
   .mobile-nav-clean {
     border: none;
@@ -726,7 +853,9 @@ select option:checked {
   .service-secure-marquee,
   .hero-floating-card-a,
   .hero-floating-card-b,
-  .hero-floating-cursor {
+  .hero-floating-cursor,
+  .about-vision-premium,
+  .about-vision-premium::before {
     animation: none !important;
   }
 }

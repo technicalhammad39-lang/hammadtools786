@@ -192,7 +192,7 @@ const Footer = () => {
                 onClick={() => {
                   void handleNewsletterSubmit();
                 }}
-                className="w-full bg-primary text-white font-black uppercase tracking-widest py-3 rounded-xl border-b-2 border-accent transition-all text-xs disabled:opacity-60"
+                className="w-full bg-primary text-black font-black uppercase tracking-widest py-3 rounded-xl border-b-2 border-accent transition-all text-xs disabled:opacity-60"
               >
                 {newsletterLoading ? 'Subscribing...' : 'Subscribe'}
               </button>

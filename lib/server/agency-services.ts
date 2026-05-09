@@ -1,11 +1,16 @@
 import { resolveImageSource } from '@/lib/image-display';
 import { toSlugFromTitle } from '@/lib/seo';
 import type { StoredFileMetadata } from '@/lib/types/domain';
+import {
+  enrichAgencyService,
+  mergeAgencyServicesWithDefaults,
+  type AgencyServiceProfile,
+} from '@/lib/agency-service-defaults';
 import { adminDb } from '@/lib/server/firebase-admin';
 
 type Dictionary = Record<string, unknown>;
 
-export interface AgencyServiceDocument {
+export interface AgencyServiceDocument extends Partial<AgencyServiceProfile> {
   id: string;
   title: string;
   slug: string;
@@ -90,6 +95,15 @@ export function normalizeAgencyServiceDocument(input: unknown, id = ''): AgencyS
     }),
     thumbnailMedia: extractMedia(data),
     tags: readStringArray(data.tags),
+    category: readString(data.category),
+    badge: readString(data.badge),
+    delivery: readString(data.delivery),
+    accent: readString(data.accent),
+    gradient: readString(data.gradient),
+    highlights: readStringArray(data.highlights),
+    features: readStringArray(data.features),
+    process: readStringArray(data.process),
+    deliverables: readStringArray(data.deliverables),
     createdAt: readDate(data.createdAt),
     updatedAt: readDate(data.updatedAt),
   };
@@ -110,10 +124,10 @@ export async function getPublishedAgencyServices(): Promise<AgencyServiceDocumen
       .filter((doc) => doc.data().active !== false)
       .map((doc) => normalizeAgencyServiceDocument(doc.data(), doc.id))
       .filter((item) => Boolean(item.slug));
-    return sortNewestFirst(services);
+    return mergeAgencyServicesWithDefaults(sortNewestFirst(services));
   } catch (error) {
     console.error('Failed to fetch agency services:', error);
-    return [];
+    return mergeAgencyServicesWithDefaults([]);
   }
 }
 
@@ -135,7 +149,7 @@ export async function getAgencyServiceBySlug(slug: string): Promise<AgencyServic
         directSnapshot.docs[0].data(),
         directSnapshot.docs[0].id
       );
-      return entry;
+      return enrichAgencyService(entry);
     }
   } catch (error) {
     console.error('Failed to fetch agency service by slug:', error);

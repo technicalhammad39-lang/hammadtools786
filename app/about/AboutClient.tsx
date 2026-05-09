@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Shield, Sparkles, Send, Globe, Users, Award, PlaySquare, Store, Ghost, Music } from 'lucide-react';
-import { FaFacebook, FaInstagram, FaWhatsapp, FaTiktok, FaSnapchat, FaYoutube, FaGoogle } from 'react-icons/fa6';
-import Image from 'next/image';
+import { Shield, Sparkles, Globe, Users, Award } from 'lucide-react';
+import { FaFacebook, FaInstagram, FaWhatsapp, FaTiktok, FaSnapchat, FaGoogle } from 'react-icons/fa6';
 import { useSettings } from '@/context/SettingsContext';
 
 export default function AboutClient() {
@@ -42,11 +41,21 @@ export default function AboutClient() {
             data-gsap-reveal="gsap"
             className="relative"
           >
-            <div className="glass p-6 md:p-10 rounded-[2.5rem] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl relative overflow-hidden bg-white/5">
-               <div className="absolute top-0 left-0 w-2 h-full bg-primary"></div>
-               <Shield className="w-8 h-8 md:w-12 md:h-12 text-primary mb-6" />
-               <h2 className="text-2xl md:text-4xl font-black uppercase text-white mb-4">Our Vision</h2>
-               <div className="space-y-4 text-brand-text/70 font-medium leading-relaxed text-sm md:text-base">
+            <div className="about-vision-premium p-6 md:p-10 rounded-[2.5rem] border border-white/10 relative overflow-hidden">
+               <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
+               <div className="absolute -bottom-24 left-10 h-60 w-60 rounded-full bg-secondary/15 blur-3xl" />
+               <div className="relative z-10">
+                 <div className="mb-6 flex items-center justify-between gap-4">
+                   <div className="about-vision-icon grid h-14 w-14 place-items-center rounded-2xl border border-primary/25 bg-primary/10 shadow-xl shadow-primary/10">
+                     <Shield className="w-7 h-7 text-primary" />
+                   </div>
+                   <div className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[9px] font-black uppercase tracking-[0.22em] text-brand-text/45">
+                     <Sparkles className="h-3.5 w-3.5 text-primary" />
+                     Premium Access Vision
+                   </div>
+                 </div>
+                 <h2 className="text-3xl md:text-5xl font-black uppercase text-white mb-4 tracking-tight">Our Vision</h2>
+                 <div className="space-y-4 text-brand-text/74 font-medium leading-relaxed text-sm md:text-base">
                   <p>
                     &ldquo;Our vision is simple: democratize access to elite digital resources. We empower creators by removing the barriers of fragmented subscriptions and high costs.&rdquo;
                   </p>
@@ -56,6 +65,7 @@ export default function AboutClient() {
                   <p className="text-primary font-bold text-xs md:text-sm">
                     - Hammad Tools Team
                   </p>
+                 </div>
                </div>
             </div>
           </div>
