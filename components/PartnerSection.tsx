@@ -26,21 +26,21 @@ const PartnerSection = () => {
   ];
 
   return (
-    <section className="py-10 md:py-20 relative overflow-hidden bg-brand-bg">
+    <section className="pt-4 pb-10 md:pt-8 md:pb-20 relative overflow-hidden bg-brand-bg">
       {/* Background Decorative Elements */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/5 blur-[100px] rounded-full -z-10" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/5 blur-[100px] rounded-full -z-10" />
       
       <div className="site-container">
-        <div className="text-center mb-10 md:mb-20">
+        <div className="text-center mb-8 md:mb-16">
           <h2
             data-gsap-reveal="gsap"
-            className="text-4xl sm:text-6xl md:text-7xl font-black uppercase text-brand-text mb-4 md:mb-6 flex flex-col md:block"
+            className="text-[32px] min-[390px]:text-[34px] sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase text-brand-text mb-4 md:mb-6 leading-none"
           >
-            <span className="font-serif italic text-white normal-case md:inline">Trusted </span>
-            <span className="internal-gradient md:inline">Partners</span>
+            <span className="block font-serif italic text-white normal-case">Trusted</span>
+            <span className="internal-gradient block whitespace-nowrap">Partners Network</span>
           </h2>
-          <p className="text-brand-text/40 text-sm font-black uppercase tracking-widest max-w-xl mx-auto">Verified partners empowering the Hammad Tools platform.</p>
+          <p className="text-brand-text/40 text-xs md:text-sm font-black uppercase tracking-widest max-w-2xl mx-auto">Verified partners, media allies and growth collaborators powering the Hammad Tools ecosystem.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 w-full xl:max-w-[92rem] mx-auto">
@@ -59,6 +59,15 @@ const PartnerSection = () => {
                 className="block h-full p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-white/60 transition-all duration-500 overflow-hidden bg-[linear-gradient(135deg,#FFFFFF_0%,#FFF9E6_55%,#FFFFFF_100%)] group-hover:bg-[linear-gradient(135deg,#FFF7D6_0%,#FFE27A_55%,#FFF7D6_100%)] shadow-[0_20px_50px_rgba(255,214,0,0.18)] group-hover:shadow-[0_28px_70px_rgba(255,214,0,0.25)] flex flex-col"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="pointer-events-none absolute right-6 top-1/2 hidden -translate-y-1/2 rotate-[-16deg] md:block opacity-[0.06] transition-opacity duration-500 group-hover:opacity-[0.11]">
+                  {partner.name === 'Khaksar Agency' ? (
+                    <Crown className="h-40 w-40 text-[#1A1A1A]" strokeWidth={1.1} />
+                  ) : (
+                    <Globe className="h-40 w-40 text-[#1A1A1A]" strokeWidth={1.1} />
+                  )}
+                </div>
+                <div className="pointer-events-none absolute right-10 top-10 hidden h-24 w-24 rotate-12 rounded-[2rem] border border-black/10 md:block" />
+                <div className="pointer-events-none absolute bottom-10 right-24 hidden h-16 w-16 -rotate-12 rounded-full border border-black/10 md:block" />
                 
                 <div className="flex items-start justify-between gap-4">
                   <div className="w-[68px] h-[68px] md:w-[88px] md:h-[88px] rounded-2xl bg-white/80 flex items-center justify-center border border-black/10 group-hover:scale-105 transition-transform overflow-hidden relative">

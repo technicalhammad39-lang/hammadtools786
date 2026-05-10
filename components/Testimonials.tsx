@@ -94,12 +94,13 @@ const Testimonials = () => {
   return (
     <section className="pt-10 pb-6 md:pt-20 md:pb-12 relative bg-brand-bg overflow-hidden">
       <div className="site-container">
-        <div className="text-center mb-8 md:mb-20">
+        <div className="text-center mb-8 md:mb-16">
           <h2
             data-gsap-reveal="gsap"
-            className="text-3xl md:text-7xl font-black mb-3 md:mb-6 text-brand-text uppercase"
+            className="text-[34px] sm:text-5xl md:text-6xl lg:text-7xl font-black mb-3 md:mb-6 text-brand-text uppercase leading-none"
           >
-            <span className="font-serif italic text-white normal-case">What Our</span> <span className="internal-gradient">Legends</span> Say
+            <span className="block font-serif italic text-white normal-case">What</span>
+            <span className="internal-gradient block">Our Legends Say</span>
           </h2>
           <p className="text-brand-text/60 text-[10px] md:text-sm font-black uppercase tracking-widest">Join 10,000+ satisfied users worldwide.</p>
         </div>

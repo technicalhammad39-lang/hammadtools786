@@ -1,11 +1,30 @@
+﻿export const DIGITAL_SERVICE_CATEGORIES = [
+  'Online Presence',
+  'Business Automation',
+  'Creative Branding',
+] as const;
+
+export type DigitalServiceCategory = (typeof DIGITAL_SERVICE_CATEGORIES)[number];
+
 export interface AgencyServiceProfile {
   id: string;
   title: string;
   slug: string;
+  category: DigitalServiceCategory | string;
+  shortDescription: string;
+  fullDescription: string;
   description: string;
+  bulletPoints: string[];
+  icon: string;
+  image?: string;
   thumbnail: string;
+  status: 'active' | 'inactive';
+  active: boolean;
+  featured: boolean;
+  displayOrder: number;
+  metaTitle: string;
+  metaDescription: string;
   tags: string[];
-  category: string;
   badge: string;
   delivery: string;
   accent: string;
@@ -23,9 +42,10 @@ type AgencyServiceInput = Partial<AgencyServiceProfile> & {
   description?: string;
   thumbnail?: string;
   tags?: string[];
+  active?: boolean;
 };
 
-function slugify(value: string) {
+export function slugifyAgencyService(value: string) {
   return (value || '')
     .trim()
     .toLowerCase()
@@ -42,206 +62,268 @@ function cleanArray(value: unknown): string[] {
   return value.map((entry) => (typeof entry === 'string' ? entry.trim() : '')).filter(Boolean);
 }
 
+function normalizeStatus(input: AgencyServiceInput): 'active' | 'inactive' {
+  const raw = typeof input.status === 'string' ? input.status.toLowerCase().trim() : '';
+  if (raw === 'inactive' || input.active === false) {
+    return 'inactive';
+  }
+  return 'active';
+}
+
+const defaultProcess = ['Discovery', 'Strategy', 'Design', 'Development', 'Testing', 'Launch & Support'];
+
 export const DEFAULT_AGENCY_SERVICES: AgencyServiceProfile[] = [
   {
     id: 'default-web-development',
-    title: 'Website Development',
-    slug: 'website-development',
-    category: 'Web Development',
-    badge: 'Launch Ready',
+    title: 'Web Development',
+    slug: 'web-development',
+    category: 'Online Presence',
+    shortDescription: 'Fast, responsive and SEO-friendly websites built for business growth.',
+    fullDescription:
+      'We create fast, modern and conversion-focused websites that help your business look professional, communicate clearly and convert more visitors into customers.',
+    description: 'Fast, responsive and SEO-friendly websites built for business growth.',
+    bulletPoints: ['Business websites', 'Landing pages', 'WordPress websites', 'Custom websites', 'SEO-ready structure'],
+    icon: 'code',
+    thumbnail: '/services-card.webp',
+    status: 'active',
+    active: true,
+    featured: true,
+    displayOrder: 10,
+    metaTitle: 'Web Development Services | Hammad Tools',
+    metaDescription: 'Fast, responsive and SEO-friendly website development services for business growth.',
+    tags: ['Websites', 'Landing Pages', 'SEO'],
+    badge: 'Online Presence',
     delivery: '5-10 Days',
     accent: '#FFD600',
     gradient: 'linear-gradient(135deg, #FFD600 0%, #FF8C2A 46%, #4F46E5 100%)',
+    highlights: ['Fast performance', 'Mobile-first layout', 'SEO-ready structure', 'Conversion sections'],
+    features: ['Business websites', 'Landing pages', 'WordPress websites', 'Custom websites', 'SEO-ready structure'],
+    process: defaultProcess,
+    deliverables: ['Responsive website', 'SEO-ready pages', 'Contact flow', 'Launch support'],
+  },
+  {
+    id: 'default-app-development',
+    title: 'App Development',
+    slug: 'app-development',
+    category: 'Business Automation',
+    shortDescription: 'User-friendly mobile apps with smooth design and scalable backend systems.',
+    fullDescription:
+      'We build mobile app experiences with clean UX, reliable backend systems and features designed around your customers, staff and business workflow.',
+    description: 'User-friendly mobile apps with smooth design and scalable backend systems.',
+    bulletPoints: ['Android apps', 'iOS apps', 'Hybrid apps', 'Booking apps', 'Customer portals'],
+    icon: 'smartphone',
     thumbnail: '/services-card.webp',
-    description:
-      'Premium business websites, landing pages, dashboards, and SEO-ready web apps built with clean UI, fast loading, mobile responsiveness, and production deployment support.',
-    tags: ['Next.js', 'Business Website', 'Landing Page', 'SEO Ready'],
-    highlights: ['Fast performance', 'Mobile-first layout', 'SEO setup', 'Hostinger deployment'],
-    features: [
-      'Custom homepage, service pages, contact flow, and conversion sections',
-      'Responsive UI for mobile, tablet, and desktop screens',
-      'SEO metadata, sitemap-ready structure, and optimized page content',
-      'Performance-focused build with compressed assets and clean code',
-      'Hostinger-ready deployment guidance and launch support',
-      'Admin-friendly content structure where required',
-    ],
-    process: ['Strategy and page map', 'Premium UI direction', 'Development and QA', 'Launch handover'],
-    deliverables: ['Production website', 'Responsive pages', 'SEO basics', 'Deployment support'],
+    status: 'active',
+    active: true,
+    featured: true,
+    displayOrder: 20,
+    metaTitle: 'App Development Services | Hammad Tools',
+    metaDescription: 'Android, iOS and hybrid app development services with scalable backend systems.',
+    tags: ['Android', 'iOS', 'Hybrid Apps'],
+    badge: 'App Systems',
+    delivery: 'Custom Timeline',
+    accent: '#38BDF8',
+    gradient: 'linear-gradient(135deg, #38BDF8 0%, #4F46E5 52%, #FFD600 100%)',
+    highlights: ['Smooth UX', 'Scalable backend', 'Customer portals', 'Booking flows'],
+    features: ['Android apps', 'iOS apps', 'Hybrid apps', 'Booking apps', 'Customer portals'],
+    process: defaultProcess,
+    deliverables: ['Mobile app flow', 'Backend setup', 'User screens', 'Testing support'],
+  },
+  {
+    id: 'default-shopify-store-development',
+    title: 'Shopify Store Development',
+    slug: 'shopify-store-development',
+    category: 'Online Presence',
+    shortDescription: 'Professional Shopify stores designed for trust, sales and easy product management.',
+    fullDescription:
+      'We design and set up Shopify stores that look premium, load fast, make products easy to manage and guide customers smoothly toward checkout.',
+    description: 'Professional Shopify stores designed for trust, sales and easy product management.',
+    bulletPoints: ['Shopify setup', 'Theme customization', 'Product pages', 'Payment setup', 'Speed optimization'],
+    icon: 'shopping-bag',
+    thumbnail: '/services-card.webp',
+    status: 'active',
+    active: true,
+    featured: true,
+    displayOrder: 30,
+    metaTitle: 'Shopify Store Development | Hammad Tools',
+    metaDescription: 'Professional Shopify store setup, theme customization, product pages and speed optimization.',
+    tags: ['Shopify', 'Ecommerce', 'Store Setup'],
+    badge: 'Sales Store',
+    delivery: '7-14 Days',
+    accent: '#22C55E',
+    gradient: 'linear-gradient(135deg, #22C55E 0%, #0EA5E9 48%, #FFD600 100%)',
+    highlights: ['Store setup', 'Product pages', 'Payment setup', 'Speed optimization'],
+    features: ['Shopify setup', 'Theme customization', 'Product pages', 'Payment setup', 'Speed optimization'],
+    process: defaultProcess,
+    deliverables: ['Shopify store', 'Product layout', 'Checkout setup', 'Launch checklist'],
+  },
+  {
+    id: 'default-woocommerce-development',
+    title: 'WooCommerce Development',
+    slug: 'woocommerce-development',
+    category: 'Online Presence',
+    shortDescription: 'Flexible WooCommerce stores with full control, custom design and smooth checkout.',
+    fullDescription:
+      'We build WooCommerce stores with custom structure, product management, secure checkout and flexible control for businesses that prefer WordPress commerce.',
+    description: 'Flexible WooCommerce stores with full control, custom design and smooth checkout.',
+    bulletPoints: ['WooCommerce setup', 'Product listing', 'Cart and checkout', 'Payment integration', 'Order management'],
+    icon: 'store',
+    thumbnail: '/services-card.webp',
+    status: 'active',
+    active: true,
+    featured: false,
+    displayOrder: 40,
+    metaTitle: 'WooCommerce Development Services | Hammad Tools',
+    metaDescription: 'WooCommerce setup, product listing, cart, checkout, payment integration and order management.',
+    tags: ['WooCommerce', 'WordPress', 'Checkout'],
+    badge: 'Commerce Flow',
+    delivery: '7-14 Days',
+    accent: '#A855F7',
+    gradient: 'linear-gradient(135deg, #A855F7 0%, #7C3AED 48%, #FFD600 100%)',
+    highlights: ['Product listing', 'Smooth checkout', 'Payment integration', 'Order management'],
+    features: ['WooCommerce setup', 'Product listing', 'Cart and checkout', 'Payment integration', 'Order management'],
+    process: defaultProcess,
+    deliverables: ['WooCommerce store', 'Product setup', 'Checkout flow', 'Order management'],
+  },
+  {
+    id: 'default-ai-development',
+    title: 'AI Development',
+    slug: 'ai-development',
+    category: 'Business Automation',
+    shortDescription: 'Smart AI-powered tools that automate tasks, improve support and save time.',
+    fullDescription:
+      'We create AI chatbots, assistants, website widgets and workflow automations that reduce manual work, improve support and speed up business operations.',
+    description: 'Smart AI-powered tools that automate tasks, improve support and save time.',
+    bulletPoints: ['AI chatbots', 'AI website widgets', 'AI automation', 'AI assistants', 'Business workflows'],
+    icon: 'bot',
+    thumbnail: '/services-card.webp',
+    status: 'active',
+    active: true,
+    featured: true,
+    displayOrder: 50,
+    metaTitle: 'AI Development Services | Hammad Tools',
+    metaDescription: 'AI chatbots, AI widgets, automation tools, assistants and custom AI business workflows.',
+    tags: ['AI Chatbots', 'Automation', 'Assistants'],
+    badge: 'AI Automation',
+    delivery: 'Custom Timeline',
+    accent: '#FACC15',
+    gradient: 'linear-gradient(135deg, #FACC15 0%, #F97316 42%, #111827 100%)',
+    highlights: ['AI chatbots', 'Workflow automation', 'Support assistants', 'Smart widgets'],
+    features: ['AI chatbots', 'AI website widgets', 'AI automation', 'AI assistants', 'Business workflows'],
+    process: defaultProcess,
+    deliverables: ['AI workflow', 'Chatbot/widget', 'Automation logic', 'Testing support'],
+  },
+  {
+    id: 'default-software-development',
+    title: 'Software Development',
+    slug: 'software-development',
+    category: 'Business Automation',
+    shortDescription: 'Custom software built around your real business process and operations.',
+    fullDescription:
+      'We build business software that fits your actual operations, from CRM and inventory to billing, employee systems and internal dashboards.',
+    description: 'Custom software built around your real business process and operations.',
+    bulletPoints: ['CRM systems', 'Inventory systems', 'Employee systems', 'Billing systems', 'Admin dashboards'],
+    icon: 'dashboard',
+    thumbnail: '/services-card.webp',
+    status: 'active',
+    active: true,
+    featured: true,
+    displayOrder: 60,
+    metaTitle: 'Software Development Services | Hammad Tools',
+    metaDescription: 'Custom CRM, inventory, employee, billing and admin dashboard software development.',
+    tags: ['CRM', 'Dashboards', 'Operations'],
+    badge: 'Business System',
+    delivery: 'Custom Timeline',
+    accent: '#0EA5E9',
+    gradient: 'linear-gradient(135deg, #0EA5E9 0%, #2563EB 46%, #FFD600 100%)',
+    highlights: ['CRM systems', 'Inventory systems', 'Billing systems', 'Admin dashboards'],
+    features: ['CRM systems', 'Inventory systems', 'Employee systems', 'Billing systems', 'Admin dashboards'],
+    process: defaultProcess,
+    deliverables: ['Software dashboard', 'Business modules', 'User roles', 'Testing support'],
+  },
+  {
+    id: 'default-saas-development',
+    title: 'SaaS Development',
+    slug: 'saas-development',
+    category: 'Business Automation',
+    shortDescription: 'Subscription-based SaaS platforms with dashboards, payments and scalable features.',
+    fullDescription:
+      'We build SaaS platforms with user accounts, admin panels, subscription plans, payments and analytics so you can launch a scalable digital product.',
+    description: 'Subscription-based SaaS platforms with dashboards, payments and scalable features.',
+    bulletPoints: ['User accounts', 'Admin panels', 'Subscription plans', 'Stripe/payment integration', 'Analytics dashboard'],
+    icon: 'layers',
+    thumbnail: '/services-card.webp',
+    status: 'active',
+    active: true,
+    featured: true,
+    displayOrder: 70,
+    metaTitle: 'SaaS Development Services | Hammad Tools',
+    metaDescription: 'SaaS platform development with accounts, admin panels, subscriptions, payments and analytics.',
+    tags: ['SaaS', 'Subscriptions', 'Payments'],
+    badge: 'Scalable Product',
+    delivery: 'Custom Timeline',
+    accent: '#14B8A6',
+    gradient: 'linear-gradient(135deg, #14B8A6 0%, #0EA5E9 48%, #FFD600 100%)',
+    highlights: ['User accounts', 'Subscription plans', 'Payment integration', 'Analytics dashboard'],
+    features: ['User accounts', 'Admin panels', 'Subscription plans', 'Stripe/payment integration', 'Analytics dashboard'],
+    process: defaultProcess,
+    deliverables: ['SaaS platform', 'Admin panel', 'Subscription setup', 'Analytics dashboard'],
   },
   {
     id: 'default-graphic-design',
     title: 'Graphic Design',
     slug: 'graphic-design',
-    category: 'Creative Design',
-    badge: 'Brand Assets',
+    category: 'Creative Branding',
+    shortDescription: 'Creative visuals that make your brand look professional, consistent and memorable.',
+    fullDescription:
+      'We design social media posts, banners, ads, flyers, business cards and campaign graphics that keep your brand premium and recognizable.',
+    description: 'Creative visuals that make your brand look professional, consistent and memorable.',
+    bulletPoints: ['Social media posts', 'Banners', 'Ads', 'Flyers', 'Business cards'],
+    icon: 'palette',
+    thumbnail: '/services-card.webp',
+    status: 'active',
+    active: true,
+    featured: false,
+    displayOrder: 80,
+    metaTitle: 'Graphic Design Services | Hammad Tools',
+    metaDescription: 'Professional social posts, banners, ads, flyers and business card design services.',
+    tags: ['Social Posts', 'Banners', 'Ads'],
+    badge: 'Creative Design',
     delivery: '2-5 Days',
     accent: '#FF8C2A',
     gradient: 'linear-gradient(135deg, #FF8C2A 0%, #FF3D81 48%, #FFD600 100%)',
-    thumbnail: '/services-card.webp',
-    description:
-      'Professional posters, social media creatives, thumbnails, banners, ads, and promotional designs crafted for clean branding and stronger visual engagement.',
-    tags: ['Social Posts', 'Banners', 'Thumbnails', 'Ads'],
-    highlights: ['Modern layouts', 'Brand-matched colors', 'High-res exports', 'Fast revisions'],
-    features: [
-      'Premium social media posts, story graphics, banners, and thumbnails',
-      'Clean composition with brand-matched typography and colors',
-      'Campaign-ready creatives for offers, launches, and promotions',
-      'Export-ready files for Instagram, Facebook, YouTube, and websites',
-      'Consistent visual direction across multiple creative formats',
-      'Revision support based on the selected project scope',
-    ],
-    process: ['Creative brief', 'Style direction', 'Design production', 'Final export'],
-    deliverables: ['Design files', 'Web-ready exports', 'Social sizes', 'Revision support'],
+    highlights: ['Social posts', 'Banners', 'Ads', 'Business cards'],
+    features: ['Social media posts', 'Banners', 'Ads', 'Flyers', 'Business cards'],
+    process: defaultProcess,
+    deliverables: ['Design assets', 'Web-ready exports', 'Social sizes', 'Revision support'],
   },
   {
-    id: 'default-ui-ux-design',
-    title: 'UI/UX Design',
-    slug: 'ui-ux-design',
-    category: 'Product Design',
-    badge: 'Premium UX',
-    delivery: '4-8 Days',
-    accent: '#38BDF8',
-    gradient: 'linear-gradient(135deg, #38BDF8 0%, #4F46E5 52%, #FFD600 100%)',
+    id: 'default-logo-design',
+    title: 'Logo Design',
+    slug: 'logo-design',
+    category: 'Creative Branding',
+    shortDescription: 'Unique and professional logos that create a strong first impression.',
+    fullDescription:
+      'We create minimal, modern and typography-based logos with brand marks and identity kits that give your business a memorable visual foundation.',
+    description: 'Unique and professional logos that create a strong first impression.',
+    bulletPoints: ['Minimal logos', 'Modern logos', 'Typography logos', 'Brand marks', 'Brand identity kits'],
+    icon: 'badge',
     thumbnail: '/services-card.webp',
-    description:
-      'High-end app and website interfaces designed with polished layouts, strong hierarchy, smooth user journeys, and conversion-focused screen structures.',
-    tags: ['App UI', 'Website UI', 'Wireframes', 'Design System'],
-    highlights: ['Conversion flow', 'Design system', 'Clean hierarchy', 'Developer-ready UI'],
-    features: [
-      'Premium landing page, dashboard, app, and website screen designs',
-      'User journey planning with clear page sections and action paths',
-      'Modern typography, spacing, component systems, and color direction',
-      'Desktop and mobile responsive design planning',
-      'Developer-friendly structure with reusable sections and states',
-      'Interactive polish recommendations for a premium product feel',
-    ],
-    process: ['UX audit', 'Wireframe direction', 'Visual design', 'Developer handoff'],
-    deliverables: ['Screen designs', 'Component direction', 'Responsive layout', 'UX notes'],
-  },
-  {
-    id: 'default-ecommerce-store',
-    title: 'E-commerce Store Setup',
-    slug: 'ecommerce-store-setup',
-    category: 'Online Store',
-    badge: 'Sales System',
-    delivery: '7-14 Days',
-    accent: '#22C55E',
-    gradient: 'linear-gradient(135deg, #22C55E 0%, #0EA5E9 48%, #FFD600 100%)',
-    thumbnail: '/services-card.webp',
-    description:
-      'Complete online store setup with product pages, checkout flow, payment guidance, product presentation, speed basics, and a clean shopping experience.',
-    tags: ['Store Setup', 'Products', 'Checkout', 'Sales'],
-    highlights: ['Product catalog', 'Checkout flow', 'Mobile store', 'Launch support'],
-    features: [
-      'Professional store homepage, product catalog, and product detail structure',
-      'Clean checkout journey planning for simple customer ordering',
-      'Product image and content presentation for better trust',
-      'Mobile-friendly storefront layout and speed-focused structure',
-      'Basic SEO setup for categories and product pages',
-      'Launch support with store flow testing and handover notes',
-    ],
-    process: ['Store plan', 'Product structure', 'UI setup', 'Checkout testing'],
-    deliverables: ['Storefront pages', 'Product layout', 'Checkout flow', 'Launch checklist'],
-  },
-  {
-    id: 'default-seo-growth',
-    title: 'SEO & Growth Optimization',
-    slug: 'seo-growth-optimization',
-    category: 'Growth',
-    badge: 'Search Ready',
+    status: 'active',
+    active: true,
+    featured: false,
+    displayOrder: 90,
+    metaTitle: 'Logo Design Services | Hammad Tools',
+    metaDescription: 'Unique minimal, modern, typography and brand mark logo design services.',
+    tags: ['Logo', 'Brand Mark', 'Identity Kit'],
+    badge: 'Identity System',
     delivery: '3-7 Days',
-    accent: '#A3E635',
-    gradient: 'linear-gradient(135deg, #A3E635 0%, #22C55E 45%, #FFD600 100%)',
-    thumbnail: '/services-card.webp',
-    description:
-      'SEO foundation, keyword mapping, page metadata, content structure, performance checks, and growth recommendations for better discoverability.',
-    tags: ['SEO', 'Keywords', 'Meta Tags', 'Growth'],
-    highlights: ['Keyword map', 'Meta cleanup', 'Content structure', 'Speed checks'],
-    features: [
-      'SEO title and description direction for important pages',
-      'Keyword mapping for services, tools, blogs, and business pages',
-      'Content structure cleanup with proper headings and intent matching',
-      'Technical checks for sitemap, robots, image alt text, and page speed',
-      'Local and niche keyword recommendations for Pakistan-focused traffic',
-      'Action plan for blogs, service pages, and conversion content',
-    ],
-    process: ['SEO audit', 'Keyword mapping', 'Page optimization', 'Growth roadmap'],
-    deliverables: ['SEO plan', 'Meta direction', 'Keyword list', 'Optimization report'],
-  },
-  {
-    id: 'default-social-media-marketing',
-    title: 'Social Media Marketing',
-    slug: 'social-media-marketing',
-    category: 'Marketing',
-    badge: 'Campaigns',
-    delivery: 'Monthly',
     accent: '#F43F5E',
     gradient: 'linear-gradient(135deg, #F43F5E 0%, #A855F7 48%, #FFD600 100%)',
-    thumbnail: '/services-card.webp',
-    description:
-      'Content planning, campaign creatives, captions, posting direction, and marketing strategy to build stronger brand presence across social platforms.',
-    tags: ['Marketing', 'Content Plan', 'Campaigns', 'Captions'],
-    highlights: ['Content strategy', 'Creative direction', 'Campaign flow', 'Audience focus'],
-    features: [
-      'Monthly content direction for brand awareness and lead generation',
-      'Creative campaign ideas for offers, launches, and promotions',
-      'Caption and hook writing for better engagement',
-      'Visual direction for posts, reels covers, stories, and ads',
-      'Platform-specific recommendations for Facebook, Instagram, TikTok, and YouTube',
-      'Performance improvement suggestions based on goals and audience',
-    ],
-    process: ['Goal planning', 'Content calendar', 'Creative production', 'Campaign review'],
-    deliverables: ['Content plan', 'Creative ideas', 'Caption direction', 'Growth notes'],
-  },
-  {
-    id: 'default-video-editing',
-    title: 'Video Editing & Reels',
-    slug: 'video-editing-reels',
-    category: 'Video Production',
-    badge: 'Scroll Stopper',
-    delivery: '2-6 Days',
-    accent: '#F97316',
-    gradient: 'linear-gradient(135deg, #F97316 0%, #EF4444 46%, #FFD600 100%)',
-    thumbnail: '/services-card.webp',
-    description:
-      'Short-form reels, promotional videos, YouTube edits, captions, motion text, clean cuts, and export-ready content for stronger viewer retention.',
-    tags: ['Reels', 'YouTube', 'Captions', 'Promos'],
-    highlights: ['Clean cuts', 'Caption styling', 'Motion text', 'Export-ready'],
-    features: [
-      'Reels, shorts, ads, and promotional video editing',
-      'Clean trimming, transitions, captions, motion text, and pacing',
-      'Brand-matched colors, lower thirds, callouts, and CTA screens',
-      'Export settings for Instagram, TikTok, YouTube Shorts, and web',
-      'Retention-focused structure for hooks, value, and final CTA',
-      'Revision support based on project size and selected scope',
-    ],
-    process: ['Footage review', 'Edit structure', 'Motion polish', 'Final export'],
-    deliverables: ['Edited video', 'Captioned export', 'Platform sizes', 'Revision support'],
-  },
-  {
-    id: 'default-brand-identity',
-    title: 'Brand Identity Kit',
-    slug: 'brand-identity-kit',
-    category: 'Branding',
-    badge: 'Identity System',
-    delivery: '5-9 Days',
-    accent: '#FACC15',
-    gradient: 'linear-gradient(135deg, #FACC15 0%, #F97316 42%, #111827 100%)',
-    thumbnail: '/services-card.webp',
-    description:
-      'Logo direction, color palette, typography pairing, social profile assets, and brand rules that give your business a premium, consistent look.',
-    tags: ['Logo', 'Colors', 'Typography', 'Brand Kit'],
-    highlights: ['Logo direction', 'Color palette', 'Typography', 'Social kit'],
-    features: [
-      'Brand direction with logo usage, color palette, and type pairing',
-      'Premium social profile assets and cover graphics',
-      'Consistent visual rules for posts, website sections, and campaigns',
-      'Business-ready brand presentation for digital platforms',
-      'Export guidance for web, social media, and print-friendly use',
-      'Clean handover notes for future design consistency',
-    ],
-    process: ['Brand discovery', 'Visual direction', 'Asset design', 'Brand handover'],
-    deliverables: ['Brand kit', 'Logo direction', 'Social assets', 'Usage notes'],
+    highlights: ['Minimal logos', 'Modern logos', 'Typography logos', 'Brand identity kits'],
+    features: ['Minimal logos', 'Modern logos', 'Typography logos', 'Brand marks', 'Brand identity kits'],
+    process: defaultProcess,
+    deliverables: ['Logo concepts', 'Final logo files', 'Brand marks', 'Identity notes'],
   },
 ];
 
@@ -250,84 +332,109 @@ const DEFAULT_PROFILE_BY_SLUG = new Map(
 );
 
 function buildGenericProfile(input: AgencyServiceInput): AgencyServiceProfile {
-  const title = (input.title || 'Agency Service').replace(/\s+/g, ' ').trim();
-  const slug = slugify(input.slug || title) || input.id || 'agency-service';
+  const title = (input.title || 'Digital Service').replace(/\s+/g, ' ').trim();
+  const slug = slugifyAgencyService(input.slug || title) || input.id || 'digital-service';
+  const bulletPoints = cleanArray(input.bulletPoints).length
+    ? cleanArray(input.bulletPoints)
+    : cleanArray(input.features).length
+      ? cleanArray(input.features)
+      : cleanArray(input.tags).length
+        ? cleanArray(input.tags)
+        : ['Custom scope', 'Professional execution', 'Quality handover'];
+  const shortDescription = input.shortDescription || input.description || 'Professional digital service built around your business goals.';
+  const status = normalizeStatus(input);
 
   return {
     id: input.id || slug,
     title,
     slug,
-    category: input.category || 'Agency Service',
-    badge: input.badge || 'Custom Scope',
+    category: input.category || 'Online Presence',
+    shortDescription,
+    fullDescription: input.fullDescription || input.description || shortDescription,
+    description: input.description || shortDescription,
+    bulletPoints,
+    icon: input.icon || 'sparkles',
+    image: input.image,
+    thumbnail: input.thumbnail || input.image || '/services-card.webp',
+    status,
+    active: status === 'active',
+    featured: Boolean(input.featured),
+    displayOrder: Number.isFinite(Number(input.displayOrder)) ? Number(input.displayOrder) : 999,
+    metaTitle: input.metaTitle || `${title} | Hammad Tools`,
+    metaDescription: input.metaDescription || shortDescription,
+    tags: cleanArray(input.tags).length ? cleanArray(input.tags) : bulletPoints.slice(0, 4),
+    badge: input.badge || 'Digital Solution',
     delivery: input.delivery || 'Custom Timeline',
     accent: input.accent || '#FFD600',
-    gradient:
-      input.gradient || 'linear-gradient(135deg, #FFD600 0%, #FF8C2A 48%, #1F2937 100%)',
-    thumbnail: input.thumbnail || '/services-card.webp',
-    description:
-      input.description ||
-      'Professional agency service with a custom scope, clean delivery process, and direct support from Hammad Tools.',
-    tags: cleanArray(input.tags).length ? cleanArray(input.tags) : ['Premium Service', 'Custom Scope'],
-    highlights: cleanArray(input.highlights).length
-      ? cleanArray(input.highlights)
-      : ['Custom strategy', 'Premium execution', 'Clean delivery', 'Direct support'],
-    features: cleanArray(input.features).length
-      ? cleanArray(input.features)
-      : [
-          'Custom scope based on your business goal',
-          'Professional execution with clean communication',
-          'Mobile and desktop friendly delivery where applicable',
-          'Quality checks before final handover',
-        ],
-    process: cleanArray(input.process).length
-      ? cleanArray(input.process)
-      : ['Brief review', 'Execution plan', 'Production', 'Final handover'],
-    deliverables: cleanArray(input.deliverables).length
-      ? cleanArray(input.deliverables)
-      : ['Custom deliverables', 'Project support', 'Final handover'],
+    gradient: input.gradient || 'linear-gradient(135deg, #FFD600 0%, #FF8C2A 48%, #1F2937 100%)',
+    highlights: cleanArray(input.highlights).length ? cleanArray(input.highlights) : bulletPoints.slice(0, 4),
+    features: cleanArray(input.features).length ? cleanArray(input.features) : bulletPoints,
+    process: cleanArray(input.process).length ? cleanArray(input.process) : defaultProcess,
+    deliverables: cleanArray(input.deliverables).length ? cleanArray(input.deliverables) : ['Strategy', 'Design/Build', 'Testing', 'Launch support'],
   };
 }
 
 export function getAgencyServiceProfile(input: AgencyServiceInput) {
-  const slug = slugify(input.slug || input.title || input.id || '');
+  const slug = slugifyAgencyService(input.slug || input.title || input.id || '');
   return DEFAULT_PROFILE_BY_SLUG.get(slug) || null;
 }
 
 export function enrichAgencyService<T extends AgencyServiceInput>(service: T): T & AgencyServiceProfile {
   const profile = getAgencyServiceProfile(service) || buildGenericProfile(service);
-  const tags = cleanArray(service.tags);
+  const serviceTitle = service.title ? service.title.replace(/\s+/g, ' ').trim() : '';
+  const status = normalizeStatus(service);
+  const bulletPoints = cleanArray(service.bulletPoints).length
+    ? cleanArray(service.bulletPoints)
+    : cleanArray(service.features).length
+      ? cleanArray(service.features)
+      : profile.bulletPoints;
+  const shortDescription = service.shortDescription || service.description || profile.shortDescription;
+  const fullDescription = service.fullDescription || service.description || profile.fullDescription;
 
   return {
     ...profile,
     ...service,
     id: service.id || profile.id,
-    title: service.title || profile.title,
-    slug: slugify(service.slug || profile.slug || service.title || profile.title) || profile.slug,
-    description: service.description || profile.description,
-    thumbnail: service.thumbnail || profile.thumbnail,
-    tags: tags.length ? tags : profile.tags,
+    title: serviceTitle || profile.title,
+    slug: slugifyAgencyService(service.slug || profile.slug || serviceTitle || profile.title) || profile.slug,
     category: service.category || profile.category,
+    shortDescription,
+    fullDescription,
+    description: service.description || shortDescription,
+    bulletPoints,
+    icon: service.icon || profile.icon,
+    image: service.image || profile.image,
+    thumbnail: service.thumbnail || service.image || profile.thumbnail,
+    status,
+    active: status === 'active',
+    featured: service.featured ?? profile.featured,
+    displayOrder: Number.isFinite(Number(service.displayOrder)) ? Number(service.displayOrder) : profile.displayOrder,
+    metaTitle: service.metaTitle || profile.metaTitle,
+    metaDescription: service.metaDescription || profile.metaDescription,
+    tags: cleanArray(service.tags).length ? cleanArray(service.tags) : profile.tags,
     badge: service.badge || profile.badge,
     delivery: service.delivery || profile.delivery,
     accent: service.accent || profile.accent,
     gradient: service.gradient || profile.gradient,
     highlights: cleanArray(service.highlights).length ? cleanArray(service.highlights) : profile.highlights,
-    features: cleanArray(service.features).length ? cleanArray(service.features) : profile.features,
+    features: cleanArray(service.features).length ? cleanArray(service.features) : bulletPoints,
     process: cleanArray(service.process).length ? cleanArray(service.process) : profile.process,
-    deliverables: cleanArray(service.deliverables).length
-      ? cleanArray(service.deliverables)
-      : profile.deliverables,
+    deliverables: cleanArray(service.deliverables).length ? cleanArray(service.deliverables) : profile.deliverables,
   };
 }
 
 export function mergeAgencyServicesWithDefaults<T extends AgencyServiceInput>(
   services: T[]
 ): Array<T & AgencyServiceProfile> {
-  const enriched = services.map((service) => enrichAgencyService(service));
-  const existingSlugs = new Set(enriched.map((service) => slugify(service.slug || service.title)));
+  const activeServices = services.filter((service) => normalizeStatus(service) === 'active');
+  const enriched = activeServices.map((service) => enrichAgencyService(service));
+  const existingSlugs = new Set(enriched.map((service) => slugifyAgencyService(service.slug || service.title)));
   const missingDefaults = DEFAULT_AGENCY_SERVICES
-    .filter((service) => !existingSlugs.has(service.slug))
+    .filter((service) => !existingSlugs.has(service.slug) && service.status === 'active')
     .map((service) => enrichAgencyService(service as T & AgencyServiceProfile));
 
-  return [...enriched, ...missingDefaults];
+  return [...enriched, ...missingDefaults].sort(
+    (a, b) => Number(a.displayOrder || 999) - Number(b.displayOrder || 999)
+  );
 }
+

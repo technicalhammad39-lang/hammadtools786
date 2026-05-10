@@ -18,6 +18,7 @@ import {
   LogOut,
   Ticket,
   Zap,
+  MessageSquareText,
   Menu,
   X
 } from 'lucide-react';
@@ -50,6 +51,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { id: 'giveaways', label: 'Giveaway', href: '/admin/giveaways', icon: Gift, mobileLabel: 'Giveaway' },
     { id: 'blogs', label: 'Blog', href: '/admin/blog', icon: FileText, mobileLabel: 'Blog' },
     { id: 'orders', label: 'Order Management', href: '/admin/orders', icon: Zap, mobileLabel: 'Orders' },
+    { id: 'inquiries', label: 'Project Inquiries', href: '/admin/inquiries', icon: MessageSquareText, mobileLabel: 'Inquiries' },
     { id: 'categories', label: 'Categories', href: '/admin/categories', icon: Layout },
     { id: 'payments', label: 'Payment Methods', href: '/admin/payment-methods', icon: CreditCard },
     { id: 'notifications', label: 'Notifications', href: '/admin/notifications', icon: Bell },
@@ -67,6 +69,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     'giveaways',
     'blogs',
     'orders',
+    'inquiries',
     'categories',
     'notifications',
     'coupons',
@@ -77,7 +80,22 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const bottomNavItems = mobileBottomNavIds
     .map((id) => visibleSidebarItems.find((item) => item.id === id))
     .filter((item): item is (typeof visibleSidebarItems)[number] => Boolean(item));
-  const hamburgerItems = visibleSidebarItems.slice(4);
+
+  React.useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  React.useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.setAttribute('data-scroll-locked', 'true');
+      return;
+    }
+
+    document.body.removeAttribute('data-scroll-locked');
+    return () => {
+      document.body.removeAttribute('data-scroll-locked');
+    };
+  }, [isMobileMenuOpen]);
 
   React.useEffect(() => {
     if (!isStaff) {
@@ -170,6 +188,16 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         }
 
         return { id: `order-${docId}`, label: orderNumber, sub: 'Order', href: `/admin/orders?order=${docId}` };
+      });
+
+      watchCollection('inquiries', 'project_inquiries', 80, (docId, data) => {
+        const label = (data.name || data.email || 'Project Inquiry').toString();
+        const haystack = `${label} ${data.email || ''} ${data.phone || ''} ${data.selectedService || ''} ${data.message || ''}`.toLowerCase();
+        if (!haystack.includes(needle)) {
+          return null;
+        }
+
+        return { id: `inquiry-${docId}`, label, sub: data.selectedService || 'Project Inquiry', href: '/admin/inquiries' };
       });
 
       watchCollection('blogs', 'blogPosts', 80, (docId, data) => {
@@ -391,37 +419,106 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-3 bg-white/5 rounded-xl text-brand-text/60 hover:text-primary transition-colors"
+              aria-label={isMobileMenuOpen ? 'Close admin menu' : 'Open admin menu'}
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            {/* Mobile Utility Dropdown Dropdown */}
+            {/* Mobile/Tablet Admin Drawer */}
             <AnimatePresence>
               {isMobileMenuOpen && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute top-16 right-0 w-64 bg-black/95 backdrop-blur-3xl border border-white/10 rounded-2xl p-4 shadow-2xl z-50 lg:hidden flex flex-col gap-2"
-                >
-                  {hamburgerItems.map(item => (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        pathname === item.href ? 'bg-primary text-black' : 'text-brand-text/60 hover:bg-white/5 hover:text-brand-text'
-                      }`}
-                    >
-                      <item.icon className="w-4 h-4" />
-                      {item.label}
-                    </Link>
-                  ))}
-                  <div className="h-px bg-white/10 my-2" />
-                  <button onClick={logout} className="flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-accent/60 hover:bg-accent/10 hover:text-accent transition-all w-full text-left">
-                    <LogOut className="w-4 h-4" /> Sign Out
-                  </button>
-                </motion.div>
+                <>
+                  <motion.button
+                    type="button"
+                    aria-label="Close admin menu overlay"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="fixed inset-0 z-[130] bg-black/70 backdrop-blur-sm lg:hidden"
+                  />
+                  <motion.aside
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', stiffness: 360, damping: 36 }}
+                    className="fixed inset-y-0 right-0 z-[140] flex h-dvh w-[min(92vw,390px)] flex-col border-l border-white/10 bg-[#090909]/98 shadow-2xl shadow-black/80 backdrop-blur-3xl lg:hidden"
+                  >
+                    <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-5">
+                      <Link href="/admin" className="flex min-w-0 items-center gap-3">
+                        <Image
+                          src="/logo-header.png"
+                          alt="Hammad Tools"
+                          width={150}
+                          height={34}
+                          className="h-8 w-auto shrink-0 object-contain"
+                          priority
+                        />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-primary/80">Admin</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-brand-text/60 hover:text-primary"
+                        aria-label="Close admin menu"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <div className="border-b border-white/10 px-5 py-4">
+                      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-primary/20 bg-white/5">
+                          <Image
+                            src={profile?.photoURL || `https://ui-avatars.com/api/?name=${profile?.displayName || 'Admin'}`}
+                            alt="Admin"
+                            fill
+                            className="object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-black uppercase tracking-widest text-brand-text">{profile?.displayName || 'Admin'}</div>
+                          <div className="mt-1 text-[9px] font-black uppercase tracking-widest text-primary/75">System Panel</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <nav className="flex-1 overflow-y-auto px-4 py-4 no-scrollbar">
+                      <div className="mb-3 px-3 text-[9px] font-black uppercase tracking-[0.28em] text-brand-text/30">All Admin Pages</div>
+                      <div className="space-y-2 pb-4">
+                        {visibleSidebarItems.map((item) => (
+                          <Link
+                            key={item.id}
+                            href={item.href}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+                              pathname === item.href
+                                ? 'bg-primary text-black shadow-lg shadow-primary/20'
+                                : 'text-brand-text/58 hover:bg-white/[0.055] hover:text-brand-text'
+                            }`}
+                          >
+                            <item.icon className={`h-[18px] w-[18px] ${pathname === item.href ? 'text-black' : 'text-primary'}`} />
+                            <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </nav>
+
+                    <div className="border-t border-white/10 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          void logout();
+                        }}
+                        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-4 text-[10px] font-black uppercase tracking-widest text-accent transition-all hover:bg-accent/15"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </motion.aside>
+                </>
               )}
             </AnimatePresence>
           </div>

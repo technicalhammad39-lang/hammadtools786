@@ -33,7 +33,7 @@ export default function UploadedImage({
     [normalizedSource, normalizedFallback]
   );
   const shouldFallbackOnError =
-    typeof fallbackOnError === 'boolean' ? fallbackOnError : !Boolean(normalizedSource);
+    typeof fallbackOnError === 'boolean' ? fallbackOnError : true;
 
   const [currentSrc, setCurrentSrc] = useState(preferred);
 

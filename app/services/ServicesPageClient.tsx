@@ -1,347 +1,474 @@
-'use client';
+﻿'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
   BadgeCheck,
-  Clapperboard,
-  Clock,
+  Bot,
+  CheckCircle2,
+  ChevronDown,
   Code2,
-  Layout,
   Layers3,
+  LayoutDashboard,
   Loader2,
-  Megaphone,
+  MessageCircle,
   Palette,
-  Search,
-  SearchCheck,
+  PenTool,
+  Rocket,
+  Send,
+  ShieldCheck,
   ShoppingBag,
+  Smartphone,
   Sparkles,
-  Tag,
+  Store,
   Zap,
 } from 'lucide-react';
-import { db } from '@/firebase';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import Link from 'next/link';
-import { useSettings } from '@/context/SettingsContext';
-import { resolveImageSource } from '@/lib/image-display';
-import { toSlugFromTitle } from '@/lib/seo';
-import type { StoredFileMetadata } from '@/lib/types/domain';
-import UploadedImage from '@/components/UploadedImage';
 import {
-  mergeAgencyServicesWithDefaults,
+  DEFAULT_AGENCY_SERVICES,
+  DIGITAL_SERVICE_CATEGORIES,
   type AgencyServiceProfile,
 } from '@/lib/agency-service-defaults';
 
-interface AgencyService extends Partial<AgencyServiceProfile> {
-  id: string;
-  title?: string;
-  slug?: string;
-  description?: string;
-  thumbnail?: string;
-  thumbnailMedia?: StoredFileMetadata | null;
-  tags?: string[];
-  active?: boolean;
+type InquiryState = {
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  selectedService: string;
+  budget: string;
+  message: string;
+};
+
+const initialInquiry: InquiryState = {
+  name: '',
+  email: '',
+  phone: '',
+  company: '',
+  selectedService: '',
+  budget: '',
+  message: '',
+};
+
+const categoryCards = [
+  {
+    title: 'Build Your Online Presence',
+    category: 'Online Presence',
+    services: ['Web Development', 'Shopify Store', 'WooCommerce Store'],
+    description:
+      'We create fast, modern and conversion-focused websites and online stores that help your business look professional and sell better online.',
+  },
+  {
+    title: 'Automate & Scale Your Business',
+    category: 'Business Automation',
+    services: ['Software Development', 'SaaS Development', 'AI Development', 'App Development'],
+    description:
+      'We build custom software, SaaS platforms, AI tools and mobile apps that automate work, improve operations and help your business scale.',
+  },
+  {
+    title: 'Make Your Brand Impossible to Ignore',
+    category: 'Creative Branding',
+    services: ['Graphic Design', 'Logo Design', 'Brand Identity'],
+    description:
+      'We design strong visual identities, logos and marketing graphics that make your brand look premium, trusted and memorable.',
+  },
+];
+
+const processSteps = [
+  ['Discovery', 'We understand your business, goals, audience and required features.'],
+  ['Strategy', 'We plan the structure, user flow, features and best technology.'],
+  ['Design', 'We create clean UI/UX or brand visuals that match your business identity.'],
+  ['Development', 'We build the website, app, store, software, SaaS or AI solution.'],
+  ['Testing', 'We test speed, mobile responsiveness, forms, checkout, features and user experience.'],
+  ['Launch & Support', 'We launch the project and support future updates, improvements and growth.'],
+];
+
+const whyChooseUs = [
+  'Complete digital team in one place',
+  'Business-focused design and development',
+  'Modern UI/UX and premium visual quality',
+  'Scalable backend and clean code',
+  'SEO-friendly and speed-optimized structure',
+  'Long-term support and improvements',
+];
+
+const faqs = [
+  {
+    q: 'What services does your digital agency provide?',
+    a: 'We provide web development, app development, Shopify and WooCommerce stores, AI development, software development, SaaS development, graphic design and logo design services.',
+  },
+  {
+    q: 'Can you build a complete website and brand identity together?',
+    a: 'Yes, we can design your logo, brand visuals and complete website so your business has a consistent and professional online presence.',
+  },
+  {
+    q: 'Do you build custom software or SaaS platforms?',
+    a: 'Yes, we build custom business software and SaaS platforms with dashboards, user accounts, admin panels, payments and scalable features.',
+  },
+  {
+    q: 'Can you develop AI tools for my business?',
+    a: 'Yes, we can build AI chatbots, AI website widgets, automation tools and custom AI workflows based on your business needs.',
+  },
+  {
+    q: 'How can I start a project with you?',
+    a: 'You can submit the project inquiry form, select your required service and share your idea. Our team will review it and contact you with the next steps.',
+  },
+];
+
+function renderServiceIcon(icon: string | undefined, className = 'h-6 w-6') {
+  const key = (icon || '').toLowerCase();
+  if (key.includes('smartphone') || key.includes('app')) return <Smartphone className={className} />;
+  if (key.includes('shopping') || key.includes('shopify')) return <ShoppingBag className={className} />;
+  if (key.includes('store') || key.includes('woo')) return <Store className={className} />;
+  if (key.includes('bot') || key.includes('ai')) return <Bot className={className} />;
+  if (key.includes('dashboard') || key.includes('software')) return <LayoutDashboard className={className} />;
+  if (key.includes('layers') || key.includes('saas')) return <Layers3 className={className} />;
+  if (key.includes('palette') || key.includes('graphic')) return <Palette className={className} />;
+  if (key.includes('badge') || key.includes('logo')) return <PenTool className={className} />;
+  if (key.includes('code') || key.includes('web')) return <Code2 className={className} />;
+  return <Sparkles className={className} />;
 }
 
-function getTitle(service: AgencyService) {
-  return (service.title || 'Untitled Service').replace(/\s+/g, ' ').trim();
-}
-
-function getServiceSlug(service: AgencyService) {
-  return toSlugFromTitle((service.slug || service.title || '').toString()) || service.id;
-}
-
-function renderServiceIcon(service: AgencyService, className: string, style: React.CSSProperties) {
-  const key = `${service.slug || ''} ${service.title || ''} ${service.category || ''}`.toLowerCase();
-
-  if (key.includes('web') || key.includes('website')) return <Code2 className={className} style={style} />;
-  if (key.includes('graphic') || key.includes('brand') || key.includes('logo')) return <Palette className={className} style={style} />;
-  if (key.includes('ui') || key.includes('ux') || key.includes('design system')) return <Layers3 className={className} style={style} />;
-  if (key.includes('store') || key.includes('ecommerce') || key.includes('shop')) return <ShoppingBag className={className} style={style} />;
-  if (key.includes('seo') || key.includes('growth')) return <SearchCheck className={className} style={style} />;
-  if (key.includes('social') || key.includes('marketing')) return <Megaphone className={className} style={style} />;
-  if (key.includes('video') || key.includes('reels')) return <Clapperboard className={className} style={style} />;
-  return <Sparkles className={className} style={style} />;
-}
-
-function getInitials(title: string) {
-  return title
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase())
-    .join('') || 'HT';
+function normalizeService(input: AgencyServiceProfile): AgencyServiceProfile {
+  return {
+    ...input,
+    bulletPoints: Array.isArray(input.bulletPoints) && input.bulletPoints.length ? input.bulletPoints : input.features || [],
+    shortDescription: input.shortDescription || input.description,
+    fullDescription: input.fullDescription || input.description,
+  };
 }
 
 export default function AgencyServicesPage() {
-  const { settings } = useSettings();
-  const [services, setServices] = useState<AgencyService[]>(
-    mergeAgencyServicesWithDefaults<AgencyService>([]).map((service) => ({ ...service }))
-  );
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchParams = useSearchParams();
+  const inquiryRef = useRef<HTMLDivElement | null>(null);
+  const [services, setServices] = useState<AgencyServiceProfile[]>(DEFAULT_AGENCY_SERVICES.map(normalizeService));
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState('');
+  const [inquiry, setInquiry] = useState<InquiryState>(initialInquiry);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     let mounted = true;
     async function loadServices() {
+      setServicesLoading(true);
+      setServicesError('');
       try {
-        const snapshot = await getDocs(query(collection(db, 'agency_services'), orderBy('createdAt', 'desc')));
-        if (!mounted) {
-          return;
+        const response = await fetch('/api/digital-services', { cache: 'no-store' });
+        const payload = (await response.json().catch(() => ({}))) as {
+          success?: boolean;
+          services?: AgencyServiceProfile[];
+          error?: string;
+        };
+        if (!response.ok || !payload.success || !Array.isArray(payload.services)) {
+          throw new Error(payload.error || 'Failed to load services.');
         }
-        const docs = snapshot.docs
-          .map((doc) => ({ id: doc.id, ...(doc.data() as Omit<AgencyService, 'id'>) }))
-          .filter((service) => service.active !== false);
-        setServices(mergeAgencyServicesWithDefaults<AgencyService>(docs).map((service) => ({ ...service })));
-      } catch (error) {
-        console.error('Failed to load agency services:', error);
         if (mounted) {
-          setServices(mergeAgencyServicesWithDefaults<AgencyService>([]).map((service) => ({ ...service })));
+          setServices(payload.services.map(normalizeService));
+        }
+      } catch (error) {
+        if (mounted) {
+          setServices(DEFAULT_AGENCY_SERVICES.map(normalizeService));
+          setServicesError('Live services could not load, so the page is showing the default Digital Solutions catalog.');
         }
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setServicesLoading(false);
       }
     }
-
     void loadServices();
     return () => {
       mounted = false;
     };
   }, []);
 
-  function buildWhatsappUrl(serviceTitle: string) {
-    const rawPhone = settings.supportPhone || '';
-    const phone = rawPhone.replace(/[^0-9]/g, '');
-    const message = `Assalam o Alaikum, I want to request: ${serviceTitle}. Please share details and price.`;
-    if (phone) {
-      return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  useEffect(() => {
+    const selected = searchParams.get('service') || searchParams.get('request') || '';
+    if (selected) {
+      setInquiry((prev) => ({ ...prev, selectedService: selected }));
+      window.requestAnimationFrame(() => inquiryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
-    if (settings.whatsappUrl) {
-      const separator = settings.whatsappUrl.includes('?') ? '&' : '?';
-      return `${settings.whatsappUrl}${separator}text=${encodeURIComponent(message)}`;
-    }
-    return '#';
-  }
+  }, [searchParams]);
 
-  const filteredServices = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return services;
-    }
-    const needle = searchQuery.trim().toLowerCase();
-    return services.filter((service) => {
-      const haystack = `${service.title || ''} ${service.description || ''} ${(service.tags || []).join(' ')}`.toLowerCase();
-      return haystack.includes(needle);
+  const activeServices = useMemo(
+    () => services.filter((service) => service.status !== 'inactive' && service.active !== false).sort((a, b) => Number(a.displayOrder || 999) - Number(b.displayOrder || 999)),
+    [services]
+  );
+
+  const groupedCounts = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const category of DIGITAL_SERVICE_CATEGORIES) result[category] = 0;
+    activeServices.forEach((service) => {
+      result[service.category] = (result[service.category] || 0) + 1;
     });
-  }, [services, searchQuery]);
+    return result;
+  }, [activeServices]);
+
+  const selectService = (serviceTitle = '') => {
+    setInquiry((prev) => ({ ...prev, selectedService: serviceTitle || prev.selectedService }));
+    inquiryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const submitInquiry = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitMessage(null);
+    try {
+      const response = await fetch('/api/project-inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...inquiry, pagePath: '/services' }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { success?: boolean; message?: string; error?: string };
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || `Submission failed (HTTP ${response.status}).`);
+      }
+      setSubmitMessage({ type: 'success', text: payload.message || 'Thanks! Your project inquiry has been received. Our team will contact you soon.' });
+      setInquiry(initialInquiry);
+    } catch (error) {
+      setSubmitMessage({ type: 'error', text: error instanceof Error ? error.message : 'Inquiry submission failed. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen page-navbar-spacing pb-16 md:pb-24 bg-brand-bg relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
-      <div className="pointer-events-none absolute top-64 -left-24 h-80 w-80 rounded-full bg-secondary/15 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-40 -right-24 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute inset-0 cyber-grid opacity-[0.08]" />
+    <main className="min-h-screen page-navbar-spacing bg-brand-bg pb-16 text-brand-text md:pb-24">
+      <section className="relative overflow-hidden border-b border-white/5">
+        <div className="pointer-events-none absolute -top-40 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-[-10rem] top-28 h-[28rem] w-[28rem] rounded-full bg-secondary/15 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 cyber-grid opacity-[0.08]" />
 
-      <div className="site-container relative z-10">
-        <section
-          data-gsap-reveal="gsap"
-          className="agency-services-hero relative overflow-hidden rounded-[2rem] md:rounded-[3rem] border border-white/10 bg-white/[0.035] px-5 py-8 md:px-10 md:py-12 mb-8 md:mb-12"
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,214,0,0.20),transparent_34%),radial-gradient(circle_at_86%_12%,rgba(56,189,248,0.16),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.07),transparent_42%)]" />
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full border border-primary/20 bg-primary/10 blur-sm" />
-          <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-primary shadow-lg shadow-primary/10">
-                <Sparkles className="h-3.5 w-3.5" />
-                High-End Digital Agency
+        <div className="site-container relative z-10 grid gap-10 py-10 md:py-16 lg:grid-cols-[minmax(0,1.04fr)_minmax(360px,0.96fr)] lg:items-center lg:py-20">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-primary shadow-lg shadow-primary/10">
+              <Sparkles className="h-3.5 w-3.5" />
+              Digital Solutions
+            </div>
+            <h1 className="mt-6 max-w-5xl text-4xl font-black uppercase leading-[0.96] tracking-tight text-white sm:text-5xl md:text-7xl">
+              One Digital Partner for Your Brand, Website & Business Growth
+            </h1>
+            <p className="mt-6 max-w-3xl text-base font-medium leading-8 text-brand-text/68 md:text-lg">
+              We help businesses build everything they need online — from websites, apps, e-commerce stores and SaaS platforms to AI tools, custom software, logos and creative designs.
+            </p>
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-[10px] font-black uppercase tracking-widest text-brand-text/45 sm:inline-flex">
+              Websites • Apps • Stores • AI • SaaS • Branding
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => selectService('')}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-6 py-4 text-[11px] font-black uppercase tracking-widest text-black shadow-xl shadow-primary/10 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+              >
+                Start Your Project
+                <ArrowRight className="h-4 w-4 -rotate-45" />
+              </button>
+              <a
+                href="#service-grid"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-6 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text/72 hover:border-primary/35 hover:text-primary"
+              >
+                View Our Work
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+
+          <div className="digital-hero-visual relative min-h-[420px] overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/40 md:p-6">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_18%,rgba(255,214,0,0.24),transparent_30%),radial-gradient(circle_at_82%_20%,rgba(255,140,42,0.16),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_45%)]" />
+            <div className="relative z-10 rounded-[1.5rem] border border-white/10 bg-black/35 p-5 backdrop-blur-xl">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <div className="text-[9px] font-black uppercase tracking-widest text-brand-text/35">Solution Dashboard</div>
+                  <div className="mt-1 text-xl font-black uppercase text-white">Growth System</div>
+                </div>
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-black">
+                  <Rocket className="h-6 w-6" />
+                </div>
               </div>
-              <h1 className="mt-5 text-4xl md:text-7xl font-black uppercase tracking-tight text-brand-text leading-[0.95]">
-                <span className="font-serif italic text-white normal-case">Premium</span>{' '}
-                <span className="internal-gradient">Services</span>
-              </h1>
-              <p className="mt-5 max-w-3xl text-sm md:text-lg leading-8 text-brand-text/62 font-medium">
-                Agency-grade web development, graphic design, UI/UX, SEO, branding, video, and marketing services built with premium visuals, clean strategy, and launch-ready delivery.
-              </p>
-              <div className="mt-7 grid grid-cols-3 gap-3 max-w-2xl">
-                {[
-                  ['8+', 'Core Services'],
-                  ['24/7', 'Support Flow'],
-                  ['Pro', 'Launch Quality'],
-                ].map(([value, label]) => (
-                  <div key={label} className="rounded-2xl border border-white/10 bg-black/25 px-3 py-4 text-center shadow-xl shadow-black/20">
-                    <div className="text-xl md:text-3xl font-black text-primary">{value}</div>
-                    <div className="mt-1 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-brand-text/42">{label}</div>
+              <div className="grid gap-3">
+                {['Website + Store', 'AI Automation', 'Brand Identity'].map((item, index) => (
+                  <div key={item} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                        {index === 0 ? <Code2 className="h-4 w-4" /> : index === 1 ? <Bot className="h-4 w-4" /> : <Palette className="h-4 w-4" />}
+                      </div>
+                      <span className="text-xs font-black uppercase tracking-widest text-brand-text/78">{item}</span>
+                    </div>
+                    <BadgeCheck className="h-4 w-4 text-primary" />
                   </div>
                 ))}
               </div>
             </div>
-
-            <div className="rounded-[1.7rem] border border-white/10 bg-black/30 p-4 shadow-2xl shadow-black/35">
-              <div className="mb-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-brand-text/40">
-                <Search className="h-3.5 w-3.5 text-primary" />
-                Find Your Service
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search services..."
-                className="w-full bg-white/[0.06] border border-white/10 rounded-2xl px-4 py-4 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-primary/55"
-              />
-              <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-brand-text/38">Available</span>
-                <span className="text-sm font-black text-primary">{filteredServices.length} services</span>
-              </div>
+            <div className="digital-floating-card absolute bottom-6 left-5 right-5 rounded-[1.4rem] border border-primary/20 bg-primary px-5 py-4 text-black shadow-2xl shadow-primary/20 md:left-auto md:w-72">
+              <div className="text-[9px] font-black uppercase tracking-widest opacity-70">Launch Stack</div>
+              <div className="mt-1 text-2xl font-black uppercase leading-none">Design + Build + Scale</div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {loading && services.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-4">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-brand-text/20">Loading services...</p>
-          </div>
-        ) : filteredServices.length === 0 ? (
-          <div className="text-center py-40 glass rounded-[3rem] border border-white/5">
-            <Layout className="w-16 h-16 text-brand-text/10 mx-auto mb-6" />
-            <h3 className="text-xl font-black uppercase text-brand-text mb-2">No Active Services</h3>
-            <p className="text-brand-text/40 text-[10px] font-black uppercase tracking-widest">Add services from admin panel to show them here.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7">
-            {filteredServices.map((service, index) => {
-              const title = getTitle(service);
-              const serviceSlug = getServiceSlug(service);
-              const serviceHref = `/services/${encodeURIComponent(serviceSlug)}`;
-              const thumbnailSrc = resolveImageSource(service, {
-                mediaPaths: ['thumbnailMedia'],
-                stringPaths: ['thumbnail'],
-                placeholder: '/services-card.webp',
-              });
-              const hasCustomThumbnail = Boolean(thumbnailSrc && thumbnailSrc !== '/services-card.webp');
-              const highlights = (service.highlights || []).slice(0, 3);
-              const accent = service.accent || '#FFD600';
-              const gradient =
-                service.gradient ||
-                'linear-gradient(135deg, #FFD600 0%, #FF8C2A 48%, #111827 100%)';
-
-              return (
-                <div
-                  key={service.id}
-                  data-gsap-reveal="gsap"
-                  className="agency-service-card group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#101010]/86 p-1 shadow-2xl shadow-black/30 backdrop-blur-2xl transition-all duration-500 hover:border-primary/35"
-                  style={{
-                    transitionDelay: `${Math.min(index * 25, 220)}ms`,
-                    '--service-accent': accent,
-                    '--service-gradient': gradient,
-                  } as React.CSSProperties}
-                >
-                  <div className="agency-service-card-glow absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-[1.55rem] bg-[#0E0E0E]">
-                    <Link href={serviceHref} className="absolute inset-0 block" aria-label={`Open ${title}`}>
-                      {hasCustomThumbnail ? (
-                        <UploadedImage
-                          src={thumbnailSrc}
-                          fallbackSrc="/services-card.webp"
-                          alt={title}
-                          className="absolute inset-0 w-full h-full object-cover opacity-75 transition-transform duration-700 group-hover:scale-[1.04]"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : null}
-                      <div className={`agency-generated-visual absolute inset-0 ${hasCustomThumbnail ? 'opacity-0' : ''}`} />
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_22%,rgba(255,255,255,0.24),transparent_24%),linear-gradient(to_top,rgba(0,0,0,0.82),rgba(0,0,0,0.10)_58%,rgba(255,255,255,0.08))]" />
-                      <div className="absolute right-5 top-5 text-6xl font-black text-white/[0.08] md:text-7xl">
-                        {getInitials(title)}
-                      </div>
-                      <div className="absolute left-5 top-5 grid h-14 w-14 place-items-center rounded-2xl border border-white/18 bg-black/35 shadow-2xl shadow-black/40 backdrop-blur-xl">
-                        {renderServiceIcon(service, 'h-7 w-7', { color: accent })}
-                      </div>
-                      <div className="absolute bottom-5 left-5 right-5">
-                        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 text-[8px] font-black uppercase tracking-widest text-white/70 backdrop-blur-xl">
-                          <BadgeCheck className="h-3 w-3" style={{ color: accent }} />
-                          {service.badge || 'Premium Service'}
-                        </div>
-                        <h3 className="max-w-[16rem] text-2xl font-black uppercase leading-[0.92] text-white drop-shadow-2xl">
-                          {title}
-                        </h3>
-                      </div>
-                    </Link>
-                  </div>
-
-                  <div className="relative p-5 md:p-6 flex flex-col flex-1">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[8px] font-black uppercase tracking-widest text-brand-text/48">
-                        {service.category || 'Agency'}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-brand-text/38">
-                        <Clock className="h-3 w-3" style={{ color: accent }} />
-                        {service.delivery || 'Custom'}
-                      </span>
-                    </div>
-
-                    <Link href={serviceHref} className="block">
-                      <h3 className="text-xl md:text-2xl font-black text-brand-text leading-tight mb-3 group-hover:text-primary transition-colors break-words line-clamp-2 min-h-[2.35em]">
-                        {title}
-                      </h3>
-                    </Link>
-
-                    <p className="text-brand-text/48 text-xs md:text-sm font-medium leading-relaxed mb-5 line-clamp-3 min-h-[4.2em]">
-                      {service.description || 'Contact us for this service.'}
-                    </p>
-
-                    {highlights.length ? (
-                      <div className="mb-5 grid gap-2">
-                        {highlights.map((highlight) => (
-                          <div key={highlight} className="flex items-center gap-2 text-[10px] font-bold text-brand-text/55">
-                            <Zap className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />
-                            <span>{highlight}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {Array.isArray(service.tags) && service.tags.length ? (
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        {service.tags.slice(0, 4).map((tag) => (
-                          <span key={tag} className="text-[9px] font-black tracking-widest text-brand-text/45 border border-white/10 bg-white/[0.025] px-2 py-1 rounded-md flex items-center gap-1 break-words">
-                            <Tag className="w-3 h-3 text-primary" /> {tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    <div className="mt-auto flex flex-col gap-4">
-                      <div className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-3 h-3 text-brand-text/25" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-brand-text/25">Premium Scope</span>
-                        </div>
-                        <Link href={serviceHref} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
-                          View Details
-                        </Link>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          const url = buildWhatsappUrl(title);
-                          if (url && url !== '#') {
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                        className="w-full bg-primary text-black py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-primary/90 transition-all shadow-xl group/btn border-b-4 border-secondary"
-                      >
-                        <span>Request Service</span>
-                        <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
-                    </div>
-                  </div>
+      <section className="site-container py-12 md:py-16">
+        <p className="mx-auto max-w-4xl text-center text-xl font-black leading-tight text-white md:text-3xl">
+          From first impression to full business automation — we handle your complete digital growth journey.
+        </p>
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          {categoryCards.map((card, index) => (
+            <article key={card.title} className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 shadow-2xl shadow-black/20 transition-all duration-500 hover:-translate-y-1 hover:border-primary/30 md:p-7">
+              <div className="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-primary/10 blur-2xl transition-opacity group-hover:opacity-100" />
+              <div className="relative z-10">
+                <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+                  {index === 0 ? <ShoppingBag className="h-6 w-6" /> : index === 1 ? <Zap className="h-6 w-6" /> : <Palette className="h-6 w-6" />}
                 </div>
-              );
-            })}
+                <h2 className="text-2xl font-black uppercase text-white">{card.title}</h2>
+                <p className="mt-4 text-sm leading-7 text-brand-text/62">{card.description}</p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {card.services.map((service) => (
+                    <span key={service} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-brand-text/52">
+                      {service}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-5 text-[9px] font-black uppercase tracking-widest text-primary">{groupedCounts[card.category] || 0} active services</div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="service-grid" className="site-container py-8 md:py-14">
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <h2 className="text-3xl font-black uppercase text-white md:text-5xl">Digital Services</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-brand-text/55">Choose the exact service you need, or start with a complete digital growth package.</p>
           </div>
-        )}
-      </div>
+          {servicesLoading ? <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary"><Loader2 className="h-4 w-4 animate-spin" /> Loading live services</div> : null}
+        </div>
+        {servicesError ? (
+          <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-bold text-primary">{servicesError}</div>
+        ) : null}
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {activeServices.map((service) => (
+            <article key={service.id} className="group flex h-full flex-col rounded-[2rem] border border-white/10 bg-[#101010]/86 p-5 shadow-2xl shadow-black/24 transition-all duration-500 hover:-translate-y-1 hover:border-primary/30 md:p-6">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="grid h-[52px] w-[52px] place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+                  {renderServiceIcon(service.icon, 'h-6 w-6')}
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[8px] font-black uppercase tracking-widest text-brand-text/42">{service.category}</span>
+              </div>
+              <h3 className="text-2xl font-black uppercase leading-tight text-white group-hover:text-primary">{service.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-brand-text/62">{service.shortDescription}</p>
+              <ul className="mt-5 grid gap-2">
+                {service.bulletPoints.slice(0, 5).map((point) => (
+                  <li key={point} className="flex items-center gap-2 text-xs font-bold text-brand-text/58">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => selectService(service.title)}
+                className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-primary transition-colors hover:bg-primary hover:text-black"
+              >
+                Discuss Project
+                <MessageCircle className="h-4 w-4" />
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="site-container py-12 md:py-16">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-black uppercase text-white md:text-5xl">How We Turn Ideas Into Digital Products</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {processSteps.map(([title, description], index) => (
+            <article key={title} className="rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-5">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-black text-black">{index + 1}</div>
+              <h3 className="text-lg font-black uppercase text-white">{title}</h3>
+              <p className="mt-3 text-sm leading-7 text-brand-text/58">{description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="site-container py-10 md:py-14">
+        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+          <div>
+            <h2 className="text-3xl font-black uppercase text-white md:text-5xl">Why Businesses Choose Us</h2>
+            <p className="mt-4 text-sm leading-7 text-brand-text/58">You get a complete digital team focused on business results, clean systems and premium presentation.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {whyChooseUs.map((point) => (
+              <div key={point} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-sm font-bold text-brand-text/68">
+                <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+                {point}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section ref={inquiryRef} id="project-inquiry" className="site-container py-12 md:py-16">
+        <div className="grid gap-8 rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/30 md:p-8 lg:grid-cols-[0.82fr_1.18fr]">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
+              <Send className="h-3.5 w-3.5" /> Project Inquiry
+            </div>
+            <h2 className="mt-5 text-3xl font-black uppercase leading-tight text-white md:text-5xl">Ready to Build Something Powerful?</h2>
+            <p className="mt-5 text-sm leading-7 text-brand-text/62">
+              Tell us your idea, and we will help you turn it into a professional website, app, store, software, SaaS product, AI solution or brand identity.
+            </p>
+          </div>
+
+          <form onSubmit={submitInquiry} className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <input name="name" required value={inquiry.name} onChange={(e) => setInquiry({ ...inquiry, name: e.target.value })} placeholder="Name" className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-sm text-brand-text outline-none focus:border-primary/50" />
+              <input name="email" required type="email" value={inquiry.email} onChange={(e) => setInquiry({ ...inquiry, email: e.target.value })} placeholder="Email" className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-sm text-brand-text outline-none focus:border-primary/50" />
+              <input name="phone" required value={inquiry.phone} onChange={(e) => setInquiry({ ...inquiry, phone: e.target.value })} placeholder="Phone / WhatsApp" className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-sm text-brand-text outline-none focus:border-primary/50" />
+              <input name="company" value={inquiry.company} onChange={(e) => setInquiry({ ...inquiry, company: e.target.value })} placeholder="Company name (optional)" className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-sm text-brand-text outline-none focus:border-primary/50" />
+              <select name="selectedService" required value={inquiry.selectedService} onChange={(e) => setInquiry({ ...inquiry, selectedService: e.target.value })} className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-sm text-brand-text outline-none focus:border-primary/50">
+                <option value="">Select service</option>
+                {activeServices.map((service) => <option key={service.slug} value={service.title}>{service.title}</option>)}
+              </select>
+              <select name="budget" value={inquiry.budget} onChange={(e) => setInquiry({ ...inquiry, budget: e.target.value })} className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-sm text-brand-text outline-none focus:border-primary/50">
+                <option value="">Budget range (optional)</option>
+                <option value="Under Rs 50,000">Under Rs 50,000</option>
+                <option value="Rs 50,000 - Rs 150,000">Rs 50,000 - Rs 150,000</option>
+                <option value="Rs 150,000 - Rs 500,000">Rs 150,000 - Rs 500,000</option>
+                <option value="Rs 500,000+">Rs 500,000+</option>
+              </select>
+            </div>
+            <textarea name="message" required rows={5} value={inquiry.message} onChange={(e) => setInquiry({ ...inquiry, message: e.target.value })} placeholder="Project details" className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-sm text-brand-text outline-none focus:border-primary/50" />
+            <button disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-6 py-4 text-[11px] font-black uppercase tracking-widest text-black disabled:opacity-60">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {submitting ? 'Submitting...' : 'Get Free Consultation'}
+            </button>
+            {submitMessage ? (
+              <p className={`rounded-2xl border px-4 py-3 text-sm font-bold ${submitMessage.type === 'success' ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-accent/20 bg-accent/10 text-accent'}`}>{submitMessage.text}</p>
+            ) : null}
+          </form>
+        </div>
+      </section>
+
+      <section className="site-container py-10 md:py-14">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="mb-6 text-center text-3xl font-black uppercase text-white md:text-5xl">Digital Solutions FAQ</h2>
+          <div className="space-y-3">
+            {faqs.map((faq) => (
+              <details key={faq.q} className="group rounded-2xl border border-white/10 bg-white/[0.035]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-black uppercase tracking-wide text-white">
+                  {faq.q}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-primary transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="border-t border-white/10 px-5 py-4 text-sm leading-7 text-brand-text/62">{faq.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
+

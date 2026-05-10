@@ -263,7 +263,7 @@ const ServicesSection = ({ initialCategorySlug = '' }: ServicesSectionProps) => 
           <div className="max-w-4xl flex flex-col items-center">
             <h2
               data-gsap-reveal="gsap"
-              className="text-[32px] sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 md:mb-6 text-brand-text uppercase leading-none text-center md:whitespace-nowrap"
+              className="text-[34px] sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 md:mb-6 text-brand-text uppercase leading-none text-center md:whitespace-nowrap"
             >
               <span className="font-serif italic text-white normal-case">Premium </span>
               <span className="internal-gradient inline">Subscriptions</span>
@@ -347,7 +347,7 @@ const ServicesSection = ({ initialCategorySlug = '' }: ServicesSectionProps) => 
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7 lg:gap-8">
           {displayServices.map((service, index) => {
             const title = getTitle(service);
             const price = getPrice(service);
@@ -372,7 +372,7 @@ const ServicesSection = ({ initialCategorySlug = '' }: ServicesSectionProps) => 
                     aria-label={`View ${title}`}
                   />
 
-                  <div className="relative aspect-[16/10] md:aspect-[4/3] overflow-hidden bg-[#0E0E0E]">
+                  <div className="relative aspect-[16/10] md:aspect-[16/11] overflow-hidden bg-[#0E0E0E]">
                     <UploadedImage
                       src={image}
                       fallbackSrc="/services-card.webp"
@@ -390,18 +390,18 @@ const ServicesSection = ({ initialCategorySlug = '' }: ServicesSectionProps) => 
 
                   </div>
 
-                  <div className="p-6 md:p-10 flex flex-col flex-1 relative z-20">
-                    <h3 className="text-2xl md:text-3xl font-black mb-2 md:mb-4 text-brand-text group-hover:text-primary transition-colors leading-none whitespace-pre-wrap break-words line-clamp-2 min-h-[2.2em] md:min-h-[2.1em]">{title}</h3>
-                    <p className="text-brand-text/40 mb-6 md:mb-10 line-clamp-3 text-xs md:text-sm font-medium leading-relaxed italic min-h-[3.8em]">{toPlainPreview(service.description || '')}</p>
+                  <div className="p-5 md:p-6 lg:p-7 flex flex-col flex-1 relative z-20">
+                    <h3 className="text-2xl sm:text-[1.7rem] md:text-[2.05rem] lg:text-[2.25rem] font-black mb-2 text-brand-text group-hover:text-primary transition-colors leading-[0.92] whitespace-pre-wrap break-words line-clamp-2 min-h-[1.84em]">{title}</h3>
+                    <p className="text-brand-text/45 mb-3 md:mb-4 line-clamp-3 text-xs md:text-sm font-medium leading-relaxed italic min-h-[3.15em]">{toPlainPreview(service.description || '')}</p>
 
-                    <div className="mt-auto">
-                      <div className="flex items-end justify-between mb-6 md:mb-8">
+                    <div className="flex flex-1 flex-col">
+                      <div className="flex items-end justify-between mb-3 md:mb-4">
                         <div>
-                          <span className="text-[8px] text-brand-text/20 block uppercase tracking-[0.4em] font-black mb-1">Global Access</span>
+                          <span className="text-[8px] text-brand-text/25 block uppercase tracking-[0.34em] font-black mb-0.5">Global Access</span>
                           <div className="flex items-end gap-2 flex-wrap">
                             <div className="flex items-baseline gap-1">
                               <span className="text-[10px] text-brand-text/40 font-bold whitespace-nowrap">Rs</span>
-                              <span className="text-3xl md:text-4xl font-black text-brand-text">{price}</span>
+                              <span className="text-3xl md:text-[2.15rem] font-black leading-none text-brand-text">{price}</span>
                             </div>
                             {originalPrice > 0 ? (
                               <span className="text-xs md:text-sm text-red-400/90 font-bold line-through decoration-red-400/80">
@@ -415,7 +415,7 @@ const ServicesSection = ({ initialCategorySlug = '' }: ServicesSectionProps) => 
                         </div>
                       </div>
 
-                      <div className="flex gap-3 relative z-30">
+                      <div className="mt-auto flex gap-3 relative z-30">
                         <button
                           onClick={(event) => {
                             event.preventDefault();

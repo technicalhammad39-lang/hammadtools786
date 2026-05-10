@@ -165,8 +165,8 @@ const Navbar = () => {
     <nav className="fixed top-[var(--promo-ticker-height)] left-0 right-0 z-[100] glass mobile-nav-clean py-2.5">
       <div className="site-container">
         <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="flex min-w-0 items-center gap-2.5 transition-transform hover:scale-105 active:scale-95 group sm:gap-3">
-            <div className="relative h-10 w-10 shrink-0 sm:h-11 sm:w-11">
+          <Link href="/" className="flex min-w-0 items-center gap-1.5 transition-transform hover:scale-105 active:scale-95 group sm:gap-2.5">
+            <div className="relative h-9 w-9 shrink-0 sm:h-11 sm:w-11">
               <Image 
                 src="/logo-header.png" 
                 alt="Hammad Tools Logo" 
@@ -175,7 +175,7 @@ const Navbar = () => {
                 priority
               />
             </div>
-            <span className="navbar-brand-text truncate text-base sm:text-xl 2xl:text-2xl font-black text-brand-text uppercase leading-none tracking-[0.03em]">
+            <span className="navbar-brand-text block max-w-[118px] truncate text-[15px] font-black uppercase leading-none tracking-[-0.03em] text-brand-text sm:max-w-none sm:text-xl sm:tracking-[0.01em] 2xl:text-2xl">
               Hammad<span className="internal-gradient">Tools</span>
             </span>
           </Link>
@@ -239,7 +239,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="xl:hidden ml-1 flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="xl:hidden ml-1 flex shrink-0 items-center gap-1 sm:gap-2">
             <button
               onClick={() => setSearchOpen((prev) => !prev)}
               className="grid h-9 w-9 place-items-center rounded-lg text-brand-text/50 hover:bg-white/5 hover:text-primary"

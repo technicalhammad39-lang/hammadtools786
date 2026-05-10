@@ -560,3 +560,74 @@ Final launch-grade fixes applied after the production audit:
 - blog schema rendering:
   - `app/blogs/[slug]/page.tsx` now sends plain-text `articleBody` to schema instead of raw rich-text HTML
 
+## 27) 2026-05-10 Digital Solutions + Responsive Launch Fixes
+
+Final responsive and agency-services launch fixes:
+
+- admin mobile/tablet navigation:
+  - `app/admin/layout.tsx` now uses a right-side full-height drawer instead of a small dropdown
+  - drawer is scrollable, closes on route change, and includes the new Project Inquiries page
+  - admin global search includes `project_inquiries`
+- public responsive fixes:
+  - `components/Navbar.tsx` keeps the full `HAMMADTOOLS` logo text visible on mobile
+  - `components/Hero.tsx` reduces excessive tablet/mobile hero spacing and keeps review-card animation lightweight
+  - `components/ServicesSection.tsx` compacts tool-card title/description/price spacing
+- home-page visual polish:
+  - `app/HomePageClient.tsx` keeps feature-card icon color consistent
+  - `components/PartnerSection.tsx` adds faded rotated decorative icons/patterns in partner-card empty space
+- Digital Solutions page:
+  - `app/services/ServicesPageClient.tsx` is now a premium agency page with:
+    - hero, CTAs, trust line
+    - 3 positioning/category cards
+    - dynamic services grid
+    - process section
+    - why-choose-us section
+    - inquiry form
+    - FAQ section
+  - `app/services/page.tsx` sets fixed SEO metadata for the Digital Solutions landing page and includes FAQ schema
+- service data model:
+  - `lib/agency-service-defaults.ts` defines default profiles for:
+    - Web Development
+    - App Development
+    - Shopify Store Development
+    - WooCommerce Development
+    - AI Development
+    - Software Development
+    - SaaS Development
+    - Graphic Design
+    - Logo Design
+  - model fields include slug, category, descriptions, bullet points, icon, status, featured, display order, and SEO fields
+  - `lib/server/agency-services.ts` merges Firestore `agency_services` docs with defaults and normalizes whitespace/order
+- new APIs:
+  - `/api/digital-services` returns active services sorted by `displayOrder`
+  - `/api/project-inquiries` stores public service-page inquiries in Firestore `project_inquiries`
+  - `/api/admin/project-inquiries` lists inquiries for authenticated staff/admin users
+  - `/api/admin/project-inquiries/[inquiryId]` updates/deletes inquiry records
+- admin service/inquiry management:
+  - `app/admin/agency-services/page.tsx` now supports slug/category/shortDescription/fullDescription/bulletPoints/icon/status/featured/displayOrder/SEO fields
+  - `app/admin/inquiries/page.tsx` lists project inquiries, supports search, status updates, and delete
+- upload/image resilience:
+  - `components/UploadedImage.tsx` now falls back on any image load error
+  - `app/uploads/[...segments]/route.ts` safely serves files from `public/uploads` and returns `services-card.webp` if a legacy uploaded path points to a missing local file
+  - this prevents broken cards/console 404s when Firebase contains stale `/uploads/...` image paths
+
+Validation completed after these changes:
+
+- `npm run lint` passes
+- `npm run build` passes
+- standalone smoke responses returned `200` for:
+  - `/`
+  - `/services`
+  - `/services/web-development`
+  - `/services/logo-design`
+  - `/admin`
+  - `/admin/inquiries`
+  - `/admin/agency-services`
+  - a missing legacy upload path under `/uploads/tools/...jpg` now returns `200 image/webp`
+- `/api/digital-services` returns normalized active services with the 9 requested defaults first
+- `/api/project-inquiries` validation returns a clean `400` for missing required name instead of crashing
+- browser smoke on mobile:
+  - no horizontal overflow on home or services
+  - services page has one H1, correct meta description, FAQ, inquiry form, service options, and no console errors
+  - only remaining browser warning is the existing Firebase client fallback config warning
+

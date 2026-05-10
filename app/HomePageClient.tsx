@@ -52,14 +52,14 @@ export default function Home() {
       <ServicesSection />
       
       {/* Why Choose Us Section - Premium Cards */}
-      <section data-gsap-reveal="gsap" className="py-12 md:py-32 relative overflow-hidden">
+      <section data-gsap-reveal="gsap" className="pt-12 pb-7 md:pt-32 md:pb-16 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/5 -z-10" />
         
         <div className="site-container">
           <div className="text-center mb-10 md:mb-20">
             <h2
               data-gsap-reveal="gsap"
-              className="text-4xl md:text-7xl font-black mb-4 md:mb-6 text-brand-text uppercase"
+              className="text-[34px] sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 md:mb-6 text-brand-text uppercase leading-none"
             >
               <span className="font-serif italic text-white normal-case">Why</span> Choose <span className="internal-gradient">Us</span>?
             </h2>
@@ -72,7 +72,7 @@ export default function Home() {
                 title: "Instant Delivery",
                 desc: "Get your credentials within seconds of purchase.",
                 icon: <Zap className="w-5 h-5 md:w-8 md:h-8" />,
-                color: "#FFD600"
+                color: "#FF8C2A"
               },
               {
                 title: "24/7 Support",
@@ -84,13 +84,13 @@ export default function Home() {
                 title: "Secure Access",
                 desc: "Encryption to protect your data and transactions.",
                 icon: <Shield className="w-5 h-5 md:w-8 md:h-8" />,
-                color: "#FFA94D"
+                color: "#FF8C2A"
               },
               {
                 title: "Premium Quality",
                 desc: "High-quality, stable accounts with full warranty.",
                 icon: <Award className="w-5 h-5 md:w-8 md:h-8" />,
-                color: "#FFD600"
+                color: "#FF8C2A"
               },
               {
                 title: "Elite Dashboard",
@@ -102,7 +102,7 @@ export default function Home() {
                 title: "Global Reach",
                 desc: "Our services work worldwide. Access from anywhere.",
                 icon: <Globe className="w-5 h-5 md:w-8 md:h-8" />,
-                color: "#FFA94D"
+                color: "#FF8C2A"
               }
             ].map((feature, index) => {
               const isWhiteCard = index % 2 === 0;
@@ -149,7 +149,9 @@ export default function Home() {
         <div className="site-container">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10 md:mb-16">
-              <h2 className="text-4xl md:text-7xl font-black mb-3 md:mb-4 text-brand-text uppercase">Got <span className="internal-gradient">Questions</span>?</h2>
+              <h2 className="text-[34px] sm:text-5xl md:text-6xl lg:text-7xl font-black mb-3 md:mb-4 text-brand-text uppercase leading-none">
+                <span className="font-serif italic text-white normal-case">Got</span> <span className="internal-gradient">Questions</span>?
+              </h2>
               <p className="text-brand-text/40 font-black uppercase tracking-widest text-[10px]">Everything you need to know about Hammad Tools.</p>
             </div>
             <div className="space-y-2.5 md:space-y-3.5">

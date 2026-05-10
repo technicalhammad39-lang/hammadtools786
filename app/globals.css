@@ -787,15 +787,36 @@ select option:checked {
     0 20px 54px color-mix(in srgb, var(--service-accent, #FFD600) 16%, transparent);
 }
 
-@media (max-width: 1279px) {
-  .mobile-nav-clean {
-    border: none;
+@keyframes digitalHeroFloat {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(1.4deg) rotateY(-1.8deg) translateY(-6px);
   }
 }
 
-@media (max-width: 380px) {
-  .navbar-brand-text {
-    display: none;
+@keyframes digitalFloatingCard {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(-2deg);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0) rotate(1deg);
+  }
+}
+
+.digital-hero-visual {
+  transform-style: preserve-3d;
+  animation: digitalHeroFloat 8s ease-in-out infinite;
+}
+
+.digital-floating-card {
+  animation: digitalFloatingCard 5.8s ease-in-out infinite;
+}
+
+@media (max-width: 1279px) {
+  .mobile-nav-clean {
+    border: none;
   }
 }
 
@@ -854,6 +875,8 @@ select option:checked {
   .hero-floating-card-a,
   .hero-floating-card-b,
   .hero-floating-cursor,
+  .digital-hero-visual,
+  .digital-floating-card,
   .about-vision-premium,
   .about-vision-premium::before {
     animation: none !important;

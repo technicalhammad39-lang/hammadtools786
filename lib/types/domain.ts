@@ -302,3 +302,41 @@ export interface NewsletterSubscriberRecord {
   createdAt?: any;
   updatedAt?: any;
 }
+
+export interface ProjectInquiryRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company?: string;
+  selectedService: string;
+  budget?: string;
+  message: string;
+  status: 'new' | 'contacted' | 'closed' | 'archived';
+  source: 'services_page' | string;
+  pagePath?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface DigitalAgencyServiceRecord {
+  id: string;
+  title: string;
+  slug: string;
+  category: 'Online Presence' | 'Business Automation' | 'Creative Branding' | string;
+  shortDescription: string;
+  fullDescription?: string;
+  bulletPoints: string[];
+  icon?: string;
+  image?: string;
+  thumbnail?: string;
+  thumbnailMedia?: StoredFileMetadata | null;
+  status: 'active' | 'inactive';
+  active?: boolean;
+  featured?: boolean;
+  displayOrder: number;
+  metaTitle?: string;
+  metaDescription?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}

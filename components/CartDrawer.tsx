@@ -46,13 +46,13 @@ const CartDrawer = () => {
       <div
         onClick={() => setIsCartOpen(false)}
         data-open={isCartOpen ? 'true' : 'false'}
-        className="cart-drawer-overlay fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
+        className="cart-drawer-overlay fixed bottom-0 left-0 right-0 top-[var(--promo-ticker-height)] bg-black/80 backdrop-blur-sm z-[100]"
         data-lenis-prevent
       />
 
       <div
         data-open={isCartOpen ? 'true' : 'false'}
-        className="cart-drawer-panel fixed top-0 right-0 h-full w-full max-w-md bg-brand-bg border-l border-white/10 z-[101] shadow-2xl flex flex-col"
+        className="cart-drawer-panel fixed bottom-0 right-0 top-[var(--promo-ticker-height)] h-auto max-h-[calc(100dvh-var(--promo-ticker-height))] w-full max-w-md bg-brand-bg border-l border-white/10 z-[101] shadow-2xl flex flex-col"
         data-lenis-prevent
       >
         <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black/20">

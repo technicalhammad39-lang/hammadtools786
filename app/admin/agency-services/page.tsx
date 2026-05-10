@@ -41,10 +41,22 @@ import MediaLibraryModal from '@/components/MediaLibraryModal';
 interface AgencyService {
   id: string;
   title: string;
+  slug?: string;
+  category?: string;
+  shortDescription?: string;
+  fullDescription?: string;
   description: string;
   thumbnail: string;
   thumbnailMedia?: StoredFileMetadata | null;
   tags: string[];
+  bulletPoints?: string[];
+  icon?: string;
+  status?: 'active' | 'inactive';
+  active?: boolean;
+  featured?: boolean;
+  displayOrder?: number;
+  metaTitle?: string;
+  metaDescription?: string;
   createdAt: any;
 }
 
@@ -64,12 +76,24 @@ const ManageAgencyServices = () => {
   // Form State
   const [form, setForm] = useState({
     title: '',
+    slug: '',
+    category: 'Online Presence',
+    shortDescription: '',
+    fullDescription: '',
     description: '',
     thumbnail: '',
     thumbnailMedia: null as StoredFileMetadata | null,
-    tags: [] as string[]
+    tags: [] as string[],
+    bulletPoints: [] as string[],
+    icon: 'code',
+    status: 'active' as 'active' | 'inactive',
+    featured: false,
+    displayOrder: 100,
+    metaTitle: '',
+    metaDescription: '',
   });
   const [newTag, setNewTag] = useState('');
+  const [newBulletPoint, setNewBulletPoint] = useState('');
 
   useEffect(() => {
     if (!isStaff) return;
@@ -77,7 +101,8 @@ const ManageAgencyServices = () => {
     const q = query(collection(db, 'agency_services'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AgencyService[];
+      const data = (snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AgencyService[])
+        .sort((a, b) => Number(a.displayOrder ?? 999) - Number(b.displayOrder ?? 999));
       setServices(data);
       setLoading(false);
     }, (error) => {
@@ -119,6 +144,10 @@ const ManageAgencyServices = () => {
       setEditingId(target.id);
       setForm({
         title: target.title,
+        slug: target.slug || '',
+        category: target.category || 'Online Presence',
+        shortDescription: target.shortDescription || target.description || '',
+        fullDescription: target.fullDescription || target.description || '',
         description: target.description,
         thumbnail: resolveImageSource(target, {
           mediaPaths: ['thumbnailMedia'],
@@ -126,6 +155,13 @@ const ManageAgencyServices = () => {
         }),
         thumbnailMedia: target.thumbnailMedia || null,
         tags: target.tags || [],
+        bulletPoints: target.bulletPoints || target.tags || [],
+        icon: target.icon || 'code',
+        status: target.status || (target.active === false ? 'inactive' : 'active'),
+        featured: Boolean(target.featured),
+        displayOrder: Number(target.displayOrder || 100),
+        metaTitle: target.metaTitle || '',
+        metaDescription: target.metaDescription || '',
       });
       setIsAdding(true);
     });
@@ -137,13 +173,24 @@ const ManageAgencyServices = () => {
     setEditingId(service.id);
     setForm({
       title: service.title,
+      slug: service.slug || '',
+      category: service.category || 'Online Presence',
+      shortDescription: service.shortDescription || service.description || '',
+      fullDescription: service.fullDescription || service.description || '',
       description: service.description,
       thumbnail: resolveImageSource(service, {
         mediaPaths: ['thumbnailMedia'],
         stringPaths: ['thumbnail'],
       }),
       thumbnailMedia: service.thumbnailMedia || null,
-      tags: service.tags || []
+      tags: service.tags || [],
+      bulletPoints: service.bulletPoints || service.tags || [],
+      icon: service.icon || 'code',
+      status: service.status || (service.active === false ? 'inactive' : 'active'),
+      featured: Boolean(service.featured),
+      displayOrder: Number(service.displayOrder || 100),
+      metaTitle: service.metaTitle || '',
+      metaDescription: service.metaDescription || '',
     });
     setIsAdding(true);
   };
@@ -155,8 +202,21 @@ const ManageAgencyServices = () => {
     let finalPayloadForDebug: Record<string, unknown> | null = null;
 
     try {
+      const normalizedSlug = (form.slug.trim() || form.title.trim()).toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const shortDescription = form.shortDescription.trim() || form.description.trim();
+      const fullDescription = form.fullDescription.trim() || form.description.trim() || shortDescription;
       const serviceData = {
         ...form,
+        slug: normalizedSlug,
+        description: shortDescription,
+        shortDescription,
+        fullDescription,
+        active: form.status === 'active',
+        displayOrder: Number(form.displayOrder || 100),
         updatedAt: serverTimestamp()
       };
       rawPayloadForDebug = serviceData as Record<string, unknown>;
@@ -211,8 +271,26 @@ const ManageAgencyServices = () => {
     router.replace('/admin/agency-services', { scroll: false });
     setIsAdding(false);
     setEditingId(null);
-    setForm({ title: '', description: '', thumbnail: '', thumbnailMedia: null, tags: [] });
+    setForm({
+      title: '',
+      slug: '',
+      category: 'Online Presence',
+      shortDescription: '',
+      fullDescription: '',
+      description: '',
+      thumbnail: '',
+      thumbnailMedia: null,
+      tags: [],
+      bulletPoints: [],
+      icon: 'code',
+      status: 'active',
+      featured: false,
+      displayOrder: 100,
+      metaTitle: '',
+      metaDescription: '',
+    });
     setNewTag('');
+    setNewBulletPoint('');
   };
 
   const addTag = () => {
@@ -224,6 +302,18 @@ const ManageAgencyServices = () => {
 
   const removeTag = (tagToRemove: string) => {
     setForm({ ...form, tags: form.tags.filter(t => t !== tagToRemove) });
+  };
+
+  const addBulletPoint = () => {
+    const value = newBulletPoint.trim();
+    if (value && !form.bulletPoints.includes(value)) {
+      setForm({ ...form, bulletPoints: [...form.bulletPoints, value] });
+      setNewBulletPoint('');
+    }
+  };
+
+  const removeBulletPoint = (pointToRemove: string) => {
+    setForm({ ...form, bulletPoints: form.bulletPoints.filter((point) => point !== pointToRemove) });
   };
 
   const formThumbnailSrc = resolveImageSource(form, {
@@ -280,25 +370,139 @@ const ManageAgencyServices = () => {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Service Title</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Logo Design"
+                    placeholder="e.g. AI Development"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text"
                     value={form.title}
                     onChange={e => setForm({...form, title: e.target.value})}
                   />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Slug</label>
+                    <input
+                      type="text"
+                      placeholder="ai-development"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text"
+                      value={form.slug}
+                      onChange={e => setForm({...form, slug: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Category</label>
+                    <select
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text"
+                      value={form.category}
+                      onChange={e => setForm({...form, category: e.target.value})}
+                    >
+                      <option value="Online Presence">Online Presence</option>
+                      <option value="Business Automation">Business Automation</option>
+                      <option value="Creative Branding">Creative Branding</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Service Description</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Short Description</label>
                   <textarea 
-                    placeholder="Describe the elite solution..."
+                    placeholder="Short conversion-focused service summary..."
                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text h-32 resize-none"
-                    value={form.description}
-                    onChange={e => setForm({...form, description: e.target.value})}
+                    value={form.shortDescription}
+                    onChange={e => setForm({...form, shortDescription: e.target.value, description: e.target.value})}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Dynamic Features / Tags</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Full Description</label>
+                  <textarea
+                    placeholder="Detailed service explanation for frontend and SEO..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text h-36 resize-none"
+                    value={form.fullDescription}
+                    onChange={e => setForm({...form, fullDescription: e.target.value})}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Status</label>
+                    <select
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text"
+                      value={form.status}
+                      onChange={e => setForm({...form, status: e.target.value as 'active' | 'inactive'})}
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Display Order</label>
+                    <input
+                      type="number"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text"
+                      value={form.displayOrder}
+                      onChange={e => setForm({...form, displayOrder: Number(e.target.value || 100)})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Icon</label>
+                    <input
+                      type="text"
+                      placeholder="code, bot, palette"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text"
+                      value={form.icon}
+                      onChange={e => setForm({...form, icon: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={e => setForm({...form, featured: e.target.checked})}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-text/55">Featured service</span>
+                </label>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Bullet Points</label>
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="text"
+                      placeholder="Add bullet point..."
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-primary transition-all text-brand-text"
+                      value={newBulletPoint}
+                      onChange={e => setNewBulletPoint(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addBulletPoint();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addBulletPoint}
+                      className="bg-primary/10 text-primary p-2 rounded-xl border border-primary/20 hover:bg-primary hover:text-brand-bg transition-all"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {form.bulletPoints.map((point, i) => (
+                      <span key={i} className="bg-primary/10 border border-primary/15 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 group text-primary">
+                        {point}
+                        <button type="button" onClick={() => removeBulletPoint(point)} className="text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Dynamic Tags</label>
                   <div className="flex gap-2 mb-4">
                     <input 
                       type="text" 
@@ -306,9 +510,15 @@ const ManageAgencyServices = () => {
                       className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-primary transition-all text-brand-text"
                       value={newTag}
                       onChange={e => setNewTag(e.target.value)}
-                      onKeyPress={e => e.key === 'Enter' && addTag()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
                     />
                     <button 
+                      type="button"
                       onClick={addTag}
                       className="bg-primary/10 text-primary p-2 rounded-xl border border-primary/20 hover:bg-primary hover:text-brand-bg transition-all"
                     >
@@ -319,11 +529,31 @@ const ManageAgencyServices = () => {
                     {form.tags.map((tag, i) => (
                       <span key={i} className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 group">
                         {tag}
-                        <button onClick={() => removeTag(tag)} className="text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button type="button" onClick={() => removeTag(tag)} className="text-accent opacity-0 group-hover:opacity-100 transition-opacity">
                           <X className="w-3 h-3" />
                         </button>
                       </span>
                     ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Meta Title</label>
+                    <input
+                      type="text"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text"
+                      value={form.metaTitle}
+                      onChange={e => setForm({...form, metaTitle: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-brand-text/30 mb-2 ml-1">Meta Description</label>
+                    <textarea
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-primary transition-all text-brand-text h-24 resize-none"
+                      value={form.metaDescription}
+                      onChange={e => setForm({...form, metaDescription: e.target.value})}
+                    />
                   </div>
                 </div>
               </div>
@@ -413,7 +643,22 @@ const ManageAgencyServices = () => {
                   </div>
                   <div className="space-y-3">
                     <h3 className="font-black text-2xl uppercase text-brand-text group-hover:text-primary transition-colors">{service.title}</h3>
-                    <p className="text-brand-text/40 text-xs font-medium line-clamp-2 italic">{service.description}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-[8px] font-black uppercase tracking-widest bg-primary/10 border border-primary/15 px-2 py-1 rounded-md text-primary">
+                        {service.category || 'Online Presence'}
+                      </span>
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${
+                        service.active === false || service.status === 'inactive'
+                          ? 'bg-accent/10 border-accent/20 text-accent'
+                          : 'bg-emerald-400/10 border-emerald-400/20 text-emerald-300'
+                      }`}>
+                        {service.active === false || service.status === 'inactive' ? 'Inactive' : 'Active'}
+                      </span>
+                      <span className="text-[8px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-2 py-1 rounded-md text-brand-text/35">
+                        Order {Number(service.displayOrder ?? 999)}
+                      </span>
+                    </div>
+                    <p className="text-brand-text/40 text-xs font-medium line-clamp-2 italic">{service.shortDescription || service.description}</p>
                     <div className="flex flex-wrap gap-2">
                       {(service.tags || []).map((tag, i) => (
                         <span key={i} className="text-[8px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-2 py-1 rounded-md text-brand-text/30">
