@@ -3,7 +3,6 @@ import { toSlugFromTitle } from '@/lib/seo';
 import type { StoredFileMetadata } from '@/lib/types/domain';
 import {
   enrichAgencyService,
-  mergeAgencyServicesWithDefaults,
   type AgencyServiceProfile,
 } from '@/lib/agency-service-defaults';
 import { adminDb } from '@/lib/server/firebase-admin';
@@ -177,10 +176,10 @@ export async function getPublishedAgencyServices(): Promise<AgencyServiceDocumen
       .filter((doc) => doc.data().active !== false)
       .map((doc) => normalizeAgencyServiceDocument(doc.data(), doc.id))
       .filter((item) => Boolean(item.slug));
-    return mergeAgencyServicesWithDefaults(sortNewestFirst(services));
+    return sortNewestFirst(services).map((service) => enrichAgencyService(service));
   } catch (error) {
     console.error('Failed to fetch agency services:', error);
-    return mergeAgencyServicesWithDefaults([]);
+    return [];
   }
 }
 

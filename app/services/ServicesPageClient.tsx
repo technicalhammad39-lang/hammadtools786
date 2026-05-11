@@ -15,12 +15,8 @@ import {
   Palette,
   Rocket,
   Send,
-  ShieldCheck,
 } from 'lucide-react';
-import {
-  DEFAULT_AGENCY_SERVICES,
-  type AgencyServiceProfile,
-} from '@/lib/agency-service-defaults';
+import { type AgencyServiceProfile } from '@/lib/agency-service-defaults';
 import UploadedImage from '@/components/UploadedImage';
 
 type InquiryState = {
@@ -50,15 +46,6 @@ const processSteps = [
   ['Development', 'We build the website, app, store, software, SaaS or AI solution.'],
   ['Testing', 'We test speed, mobile responsiveness, forms, checkout, features and user experience.'],
   ['Launch & Support', 'We launch the project and support future updates, improvements and growth.'],
-];
-
-const whyChooseUs = [
-  'Complete digital team in one place',
-  'Business-focused design and development',
-  'Modern UI/UX and premium visual quality',
-  'Scalable backend and clean code',
-  'SEO-friendly and speed-optimized structure',
-  'Long-term support and improvements',
 ];
 
 const faqs = [
@@ -96,7 +83,7 @@ function normalizeService(input: AgencyServiceProfile): AgencyServiceProfile {
 export default function AgencyServicesPage() {
   const searchParams = useSearchParams();
   const inquiryRef = useRef<HTMLDivElement | null>(null);
-  const [services, setServices] = useState<AgencyServiceProfile[]>(DEFAULT_AGENCY_SERVICES.map(normalizeService));
+  const [services, setServices] = useState<AgencyServiceProfile[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [servicesError, setServicesError] = useState('');
   const [inquiry, setInquiry] = useState<InquiryState>(initialInquiry);
@@ -123,8 +110,8 @@ export default function AgencyServicesPage() {
         }
       } catch (error) {
         if (mounted) {
-          setServices(DEFAULT_AGENCY_SERVICES.map(normalizeService));
-          setServicesError('Live services could not load, so the page is showing the default Digital Solutions catalog.');
+          setServices([]);
+          setServicesError(error instanceof Error ? error.message : 'Live services could not load. Please try again later.');
         }
       } finally {
         if (mounted) setServicesLoading(false);
@@ -267,9 +254,17 @@ export default function AgencyServicesPage() {
         {servicesError ? (
           <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-bold text-primary">{servicesError}</div>
         ) : null}
-        <div className="grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {activeServices.map((service) => (
-            <article key={service.id} className="group relative flex h-[540px] flex-col overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#101010]/88 shadow-2xl shadow-black/30 transition-all duration-500 hover:-translate-y-1 hover:border-primary/35 hover:shadow-primary/10 sm:rounded-[2rem] md:h-[560px]">
+        {activeServices.length === 0 && !servicesLoading ? (
+          <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.035] px-5 py-10 text-center">
+            <p className="text-sm font-black uppercase tracking-widest text-primary">No active services yet</p>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-brand-text/55">
+              Add active services from the admin panel to show them on this page.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {activeServices.map((service) => (
+              <article key={service.id} className="group relative flex h-[540px] flex-col overflow-hidden rounded-[1.65rem] border border-white/10 bg-[#101010]/88 shadow-2xl shadow-black/30 transition-all duration-500 hover:-translate-y-1 hover:border-primary/35 hover:shadow-primary/10 sm:rounded-[2rem] md:h-[560px]">
               <div className="relative h-44 shrink-0 overflow-hidden bg-black sm:h-48 md:h-52">
                 <UploadedImage
                   src={service.thumbnail || service.image || '/services-card.webp'}
@@ -304,9 +299,10 @@ export default function AgencyServicesPage() {
                   <MessageCircle className="h-4 w-4" />
                 </button>
               </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="site-container py-10 md:py-16">
@@ -321,28 +317,6 @@ export default function AgencyServicesPage() {
               <p className="mt-3 text-[13px] leading-6 text-brand-text/58 md:text-sm md:leading-7">{description}</p>
             </article>
           ))}
-        </div>
-      </section>
-
-      <section className="site-container py-9 md:py-14">
-        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div>
-            <h2 className="text-[2rem] font-black uppercase leading-none text-white md:text-5xl">
-              <span className="block font-serif italic normal-case text-white">Why</span>
-              <span className="internal-gradient mt-1 block">
-                Businesses Choose Us
-              </span>
-            </h2>
-            <p className="mt-4 text-[13px] leading-6 text-brand-text/58 md:text-sm md:leading-7">You get a complete digital team focused on business results, clean systems and premium presentation.</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {whyChooseUs.map((point) => (
-              <div key={point} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3.5 text-[13px] font-bold text-brand-text/68 md:py-4 md:text-sm">
-                <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
-                {point}
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
