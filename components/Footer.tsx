@@ -212,8 +212,8 @@ const Footer = () => {
             &nbsp; | Partnered with <a href="https://dailyhayat.net" target="_blank" rel="noopener noreferrer" className="text-secondary hover:underline">DailyHayat</a>
           </p>
           <div className="mt-4 space-x-6">
-            <Link href="/privacy" className="hover:text-brand-text/60 transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-brand-text/60 transition-colors">Terms of Service</Link>
+            <Link href="/privacy-policy" className="hover:text-brand-text/60 transition-colors">Privacy Policy</Link>
+            <Link href="/terms-and-conditions" className="hover:text-brand-text/60 transition-colors">Terms & Conditions</Link>
           </div>
         </div>
       </div>

@@ -66,7 +66,7 @@ export default function ServicesPage() {
         name: 'How can I start a project with you?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'You can submit the project inquiry form, select your required service and share your idea. Our team will review it and contact you with the next steps.',
+          text: 'You can open the WhatsApp consultation button, select your required service and discuss pricing, timeline and process directly with our team.',
         },
       },
     ],

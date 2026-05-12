@@ -59,6 +59,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { id: 'coupons', label: 'Coupons', href: '/admin/coupons', icon: Ticket },
     { id: 'users', label: 'Users', href: '/admin/users', icon: Users },
     { id: 'socials', label: 'Social Links', href: '/admin/socials', icon: Share2 },
+    { id: 'legal', label: 'Legal Pages', href: '/admin/legal-pages', icon: FileText },
     { id: 'settings', label: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

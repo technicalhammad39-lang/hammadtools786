@@ -170,8 +170,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: withSite('/giveaway'), lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: withSite('/about'), lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: withSite('/contact'), lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: withSite('/privacy'), lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
-    { url: withSite('/terms'), lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
+    { url: withSite('/privacy-policy'), lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
+    { url: withSite('/terms-and-conditions'), lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
   ];
 
   const [toolEntries, blogEntries, agencyServiceEntries, categoryEntries] = await Promise.all([

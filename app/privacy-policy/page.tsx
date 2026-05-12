@@ -10,12 +10,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return createPageMetadata({
     title: page.metaTitle,
     description: page.metaDescription,
-    path: '/privacy',
+    path: page.path,
     keywords: ['hammad tools privacy policy', 'privacy policy subscriptions'],
   });
 }
 
-export default async function PrivacyPage() {
+export default async function PrivacyPolicyPage() {
   const page = await getLegalPageContent('privacy-policy');
-  return <LegalPageView page={{ ...page, path: '/privacy' }} variant="privacy" />;
+  return <LegalPageView page={page} variant="privacy" />;
 }

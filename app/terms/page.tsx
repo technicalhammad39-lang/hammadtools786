@@ -1,15 +1,21 @@
 import type { Metadata } from 'next';
-import TermsPageClient from './TermsPageClient';
+import LegalPageView from '@/components/LegalPageView';
 import { createPageMetadata } from '@/lib/seo';
+import { getLegalPageContent } from '@/lib/server/legal-pages';
 
-export const metadata: Metadata = createPageMetadata({
-  title: 'Terms of Service - Hammad Tools',
-  description: 'Read Hammad Tools terms of service for subscription usage, account policies, and payment terms.',
-  path: '/terms',
-  keywords: ['hammad tools terms', 'subscription terms Pakistan'],
-});
+export const dynamic = 'force-dynamic';
 
-export default function TermsPage() {
-  return <TermsPageClient />;
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getLegalPageContent('terms-and-conditions');
+  return createPageMetadata({
+    title: page.metaTitle,
+    description: page.metaDescription,
+    path: '/terms',
+    keywords: ['hammad tools terms', 'subscription terms Pakistan'],
+  });
 }
 
+export default async function TermsPage() {
+  const page = await getLegalPageContent('terms-and-conditions');
+  return <LegalPageView page={{ ...page, path: '/terms' }} variant="terms" />;
+}

@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
@@ -14,30 +13,10 @@ import {
   MessageCircle,
   Palette,
   Rocket,
-  Send,
 } from 'lucide-react';
 import { type AgencyServiceProfile } from '@/lib/agency-service-defaults';
 import UploadedImage from '@/components/UploadedImage';
-
-type InquiryState = {
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  selectedService: string;
-  budget: string;
-  message: string;
-};
-
-const initialInquiry: InquiryState = {
-  name: '',
-  email: '',
-  phone: '',
-  company: '',
-  selectedService: '',
-  budget: '',
-  message: '',
-};
+import { buildServiceWhatsAppUrl } from '@/lib/service-whatsapp';
 
 const processSteps = [
   ['Discovery', 'We understand your business, goals, audience and required features.'],
@@ -67,7 +46,7 @@ const faqs = [
   },
   {
     q: 'How can I start a project with you?',
-    a: 'You can submit the project inquiry form, select your required service and share your idea. Our team will review it and contact you with the next steps.',
+    a: 'You can open the WhatsApp consultation button, choose your required service and discuss pricing, timeline and process directly with our team.',
   },
 ];
 
@@ -86,9 +65,7 @@ export default function AgencyServicesPage() {
   const [services, setServices] = useState<AgencyServiceProfile[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [servicesError, setServicesError] = useState('');
-  const [inquiry, setInquiry] = useState<InquiryState>(initialInquiry);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedService, setSelectedService] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -126,7 +103,7 @@ export default function AgencyServicesPage() {
   useEffect(() => {
     const selected = searchParams.get('service') || searchParams.get('request') || '';
     if (selected) {
-      setInquiry((prev) => ({ ...prev, selectedService: selected }));
+      setSelectedService(selected);
       window.requestAnimationFrame(() => inquiryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
   }, [searchParams]);
@@ -136,33 +113,23 @@ export default function AgencyServicesPage() {
     [services]
   );
 
-  const selectService = (serviceTitle = '') => {
-    setInquiry((prev) => ({ ...prev, selectedService: serviceTitle || prev.selectedService }));
-    inquiryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const selectedServiceProfile = useMemo(
+    () => activeServices.find((service) => service.title === selectedService),
+    [activeServices, selectedService]
+  );
 
-  const submitInquiry = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setSubmitMessage(null);
-    try {
-      const response = await fetch('/api/project-inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...inquiry, pagePath: '/services' }),
-      });
-      const payload = (await response.json().catch(() => ({}))) as { success?: boolean; message?: string; error?: string };
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || `Submission failed (HTTP ${response.status}).`);
-      }
-      setSubmitMessage({ type: 'success', text: payload.message || 'Thanks! Your project inquiry has been received. Our team will contact you soon.' });
-      setInquiry(initialInquiry);
-    } catch (error) {
-      setSubmitMessage({ type: 'error', text: error instanceof Error ? error.message : 'Inquiry submission failed. Please try again.' });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const genericWhatsAppHref = buildServiceWhatsAppUrl(
+    'Digital Solutions',
+    'I want guidance for website, app, ecommerce, AI, SaaS, software, branding or design services.'
+  );
+
+  const selectedWhatsAppHref = buildServiceWhatsAppUrl(
+    selectedServiceProfile?.title || selectedService || 'Digital Solutions',
+    selectedServiceProfile?.shortDescription ||
+      selectedServiceProfile?.description ||
+      selectedServiceProfile?.fullDescription ||
+      'I want to discuss a digital service for my business.'
+  );
 
   return (
     <main className="min-h-screen page-navbar-spacing bg-brand-bg pb-12 text-brand-text md:pb-24">
@@ -191,14 +158,15 @@ export default function AgencyServicesPage() {
               Websites • Apps • Stores • AI • SaaS • Branding
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => selectService('')}
+              <a
+                href={genericWhatsAppHref}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-black shadow-xl shadow-primary/10 transition-transform hover:scale-[1.01] active:scale-[0.99] sm:px-6 sm:py-4 sm:text-[11px]"
               >
                 Start Your Project
                 <ArrowRight className="h-4 w-4 -rotate-45" />
-              </button>
+              </a>
               <a
                 href="#service-grid"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-brand-text/72 hover:border-primary/35 hover:text-primary sm:px-6 sm:py-4 sm:text-[11px]"
@@ -290,14 +258,15 @@ export default function AgencyServicesPage() {
                     </li>
                   ))}
                 </ul>
-                <button
-                  type="button"
-                  onClick={() => selectService(service.title)}
+                <a
+                  href={buildServiceWhatsAppUrl(service.title, service.shortDescription || service.description || service.fullDescription)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-4 py-3 text-[10px] font-black uppercase tracking-widest text-black shadow-xl shadow-primary/10 transition-transform hover:scale-[1.01] active:scale-[0.99]"
                 >
                   Discuss Project
                   <MessageCircle className="h-4 w-4" />
-                </button>
+                </a>
               </div>
               </article>
             ))}
@@ -324,7 +293,7 @@ export default function AgencyServicesPage() {
         <div className="grid gap-6 rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/30 sm:rounded-[2rem] sm:p-5 md:gap-8 md:p-8 lg:grid-cols-[0.82fr_1.18fr]">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
-              <Send className="h-3.5 w-3.5" /> Project Inquiry
+              <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Consultation
             </div>
             <h2 className="mt-5 text-[2rem] font-black uppercase leading-none text-white md:text-5xl">
               <span className="block font-serif italic normal-case text-white">Ready to Build</span>
@@ -334,37 +303,38 @@ export default function AgencyServicesPage() {
               </span>
             </h2>
             <p className="mt-4 text-[13px] leading-6 text-brand-text/62 md:mt-5 md:text-sm md:leading-7">
-              Tell us your idea, and we will help you turn it into a professional website, app, store, software, SaaS product, AI solution or brand identity.
+              Tell us your idea on WhatsApp, and we will guide you about pricing, timeline and the right service package.
             </p>
           </div>
 
-          <form onSubmit={submitInquiry} className="grid gap-3.5 md:gap-4">
-            <div className="grid gap-3.5 md:grid-cols-2 md:gap-4">
-              <input name="name" required value={inquiry.name} onChange={(e) => setInquiry({ ...inquiry, name: e.target.value })} placeholder="Name" className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4" />
-              <input name="email" required type="email" value={inquiry.email} onChange={(e) => setInquiry({ ...inquiry, email: e.target.value })} placeholder="Email" className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4" />
-              <input name="phone" required value={inquiry.phone} onChange={(e) => setInquiry({ ...inquiry, phone: e.target.value })} placeholder="Phone / WhatsApp" className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4" />
-              <input name="company" value={inquiry.company} onChange={(e) => setInquiry({ ...inquiry, company: e.target.value })} placeholder="Company name (optional)" className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4" />
-              <select name="selectedService" required value={inquiry.selectedService} onChange={(e) => setInquiry({ ...inquiry, selectedService: e.target.value })} className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4">
-                <option value="">Select service</option>
+          <div className="grid gap-4 rounded-[1.35rem] border border-white/10 bg-black/20 p-4 sm:rounded-[1.75rem] sm:p-5">
+            <div className="grid gap-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-brand-text/40">Choose service for WhatsApp message</label>
+              <select
+                value={selectedService}
+                onChange={(event) => setSelectedService(event.target.value)}
+                className="rounded-xl border border-white/10 bg-black/35 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4"
+              >
+                <option value="">Digital Solutions</option>
                 {activeServices.map((service) => <option key={service.slug} value={service.title}>{service.title}</option>)}
               </select>
-              <select name="budget" value={inquiry.budget} onChange={(e) => setInquiry({ ...inquiry, budget: e.target.value })} className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4">
-                <option value="">Budget range (optional)</option>
-                <option value="Under Rs 50,000">Under Rs 50,000</option>
-                <option value="Rs 50,000 - Rs 150,000">Rs 50,000 - Rs 150,000</option>
-                <option value="Rs 150,000 - Rs 500,000">Rs 150,000 - Rs 500,000</option>
-                <option value="Rs 500,000+">Rs 500,000+</option>
-              </select>
             </div>
-            <textarea name="message" required rows={5} value={inquiry.message} onChange={(e) => setInquiry({ ...inquiry, message: e.target.value })} placeholder="Project details" className="rounded-xl border border-white/10 bg-black/25 px-4 py-3.5 text-sm text-brand-text outline-none focus:border-primary/50 md:rounded-2xl md:py-4" />
-            <button disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-black disabled:opacity-60 md:px-6 md:py-4 md:text-[11px]">
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {submitting ? 'Submitting...' : 'Get Free Consultation'}
-            </button>
-            {submitMessage ? (
-              <p className={`rounded-2xl border px-4 py-3 text-sm font-bold ${submitMessage.type === 'success' ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-accent/20 bg-accent/10 text-accent'}`}>{submitMessage.text}</p>
-            ) : null}
-          </form>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4">
+              <div className="text-[10px] font-black uppercase tracking-widest text-primary">Message Preview</div>
+              <p className="mt-2 text-sm font-bold leading-7 text-brand-text/62">
+                {selectedServiceProfile?.shortDescription || selectedServiceProfile?.description || selectedServiceProfile?.fullDescription || 'I want to discuss a digital service for my business.'}
+              </p>
+            </div>
+            <a
+              href={selectedWhatsAppHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-black md:px-6 md:py-4 md:text-[11px]"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Get Free Consultation
+            </a>
+          </div>
         </div>
       </section>
 

@@ -30,6 +30,7 @@ import {
 } from '@/lib/seo';
 import { toMetadataImageUrl } from '@/lib/image-display';
 import { getAgencyServiceBySlug } from '@/lib/server/agency-services';
+import { buildServiceWhatsAppUrl } from '@/lib/service-whatsapp';
 
 type PageParams = { slug: string };
 
@@ -145,7 +146,7 @@ export default async function ServiceDetailPage({
   const gradient =
     service.gradient || 'linear-gradient(135deg, #FFD600 0%, #FF8C2A 48%, #111827 100%)';
   const hasCustomImage = Boolean(imageSrc && imageSrc !== '/services-card.webp');
-  const requestHref = `/services?request=${encodeURIComponent(serviceTitle)}`;
+  const requestHref = buildServiceWhatsAppUrl(serviceTitle, serviceDescription);
 
   const serviceSchema = {
     '@context': 'https://schema.org',
@@ -238,13 +239,15 @@ export default async function ServiceDetailPage({
               ) : null}
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
+                <a
                   href={requestHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-6 py-4 text-[11px] font-black uppercase tracking-widest text-black transition-transform hover:scale-[1.01] active:scale-[0.99]"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Request Service
-                </Link>
+                </a>
                 <Link
                   href="/services"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-6 py-4 text-[11px] font-black uppercase tracking-widest text-brand-text/70 hover:border-primary/35 hover:text-primary"
