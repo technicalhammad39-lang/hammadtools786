@@ -28,6 +28,12 @@ export interface AgencyServiceDocument extends Partial<AgencyServiceProfile> {
   displayOrder?: number;
   metaTitle?: string;
   metaDescription?: string;
+  price?: string | number;
+  servicePrice?: string | number;
+  startingPrice?: string | number;
+  basePrice?: string | number;
+  minPrice?: string | number;
+  budget?: string | number;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
@@ -98,6 +104,17 @@ function readNumber(value: unknown) {
   return Number.isFinite(numberValue) ? numberValue : undefined;
 }
 
+function readPriceValue(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    return normalized || undefined;
+  }
+  return undefined;
+}
+
 function extractMedia(input: Dictionary): StoredFileMetadata | null {
   const candidate = input.thumbnailMedia;
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
@@ -143,6 +160,12 @@ export function normalizeAgencyServiceDocument(input: unknown, id = ''): AgencyS
     displayOrder: readNumber(data.displayOrder ?? data.sortOrder ?? data.orderIndex),
     metaTitle: readString(data.metaTitle),
     metaDescription: readString(data.metaDescription),
+    price: readPriceValue(data.price),
+    servicePrice: readPriceValue(data.servicePrice),
+    startingPrice: readPriceValue(data.startingPrice),
+    basePrice: readPriceValue(data.basePrice),
+    minPrice: readPriceValue(data.minPrice),
+    budget: readPriceValue(data.budget),
     category: readString(data.category),
     badge: readString(data.badge),
     delivery: readString(data.delivery),

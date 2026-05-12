@@ -33,6 +33,12 @@ export interface AgencyServiceProfile {
   features: string[];
   process: string[];
   deliverables: string[];
+  price?: string | number;
+  servicePrice?: string | number;
+  startingPrice?: string | number;
+  basePrice?: string | number;
+  minPrice?: string | number;
+  budget?: string | number;
 }
 
 type AgencyServiceInput = Partial<AgencyServiceProfile> & {
@@ -112,6 +118,12 @@ function buildGenericProfile(input: AgencyServiceInput): AgencyServiceProfile {
     features: cleanArray(input.features).length ? cleanArray(input.features) : bulletPoints,
     process: cleanArray(input.process).length ? cleanArray(input.process) : defaultProcess,
     deliverables: cleanArray(input.deliverables).length ? cleanArray(input.deliverables) : ['Strategy', 'Design/Build', 'Testing', 'Launch support'],
+    price: input.price,
+    servicePrice: input.servicePrice,
+    startingPrice: input.startingPrice,
+    basePrice: input.basePrice,
+    minPrice: input.minPrice,
+    budget: input.budget,
   };
 }
 
@@ -156,6 +168,12 @@ export function enrichAgencyService<T extends AgencyServiceInput>(service: T): T
     features: cleanArray(service.features).length ? cleanArray(service.features) : bulletPoints,
     process: cleanArray(service.process).length ? cleanArray(service.process) : profile.process,
     deliverables: cleanArray(service.deliverables).length ? cleanArray(service.deliverables) : profile.deliverables,
+    price: service.price ?? profile.price,
+    servicePrice: service.servicePrice ?? profile.servicePrice,
+    startingPrice: service.startingPrice ?? profile.startingPrice,
+    basePrice: service.basePrice ?? profile.basePrice,
+    minPrice: service.minPrice ?? profile.minPrice,
+    budget: service.budget ?? profile.budget,
   };
 }
 

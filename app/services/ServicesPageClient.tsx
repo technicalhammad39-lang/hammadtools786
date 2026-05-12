@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { type AgencyServiceProfile } from '@/lib/agency-service-defaults';
 import UploadedImage from '@/components/UploadedImage';
-import { buildServiceWhatsAppUrl } from '@/lib/service-whatsapp';
+import { buildServiceWhatsAppUrl, getServicePriceLabel } from '@/lib/service-whatsapp';
 
 const processSteps = [
   ['Discovery', 'We understand your business, goals, audience and required features.'],
@@ -119,16 +119,12 @@ export default function AgencyServicesPage() {
   );
 
   const genericWhatsAppHref = buildServiceWhatsAppUrl(
-    'Digital Solutions',
-    'I want guidance for website, app, ecommerce, AI, SaaS, software, branding or design services.'
+    'Digital Solutions'
   );
 
   const selectedWhatsAppHref = buildServiceWhatsAppUrl(
     selectedServiceProfile?.title || selectedService || 'Digital Solutions',
-    selectedServiceProfile?.shortDescription ||
-      selectedServiceProfile?.description ||
-      selectedServiceProfile?.fullDescription ||
-      'I want to discuss a digital service for my business.'
+    getServicePriceLabel(selectedServiceProfile)
   );
 
   return (
@@ -259,7 +255,7 @@ export default function AgencyServicesPage() {
                   ))}
                 </ul>
                 <a
-                  href={buildServiceWhatsAppUrl(service.title, service.shortDescription || service.description || service.fullDescription)}
+                  href={buildServiceWhatsAppUrl(service.title, getServicePriceLabel(service))}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl border-b-4 border-secondary bg-primary px-4 py-3 text-[10px] font-black uppercase tracking-widest text-black shadow-xl shadow-primary/10 transition-transform hover:scale-[1.01] active:scale-[0.99]"
@@ -322,7 +318,9 @@ export default function AgencyServicesPage() {
             <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4">
               <div className="text-[10px] font-black uppercase tracking-widest text-primary">Message Preview</div>
               <p className="mt-2 text-sm font-bold leading-7 text-brand-text/62">
-                {selectedServiceProfile?.shortDescription || selectedServiceProfile?.description || selectedServiceProfile?.fullDescription || 'I want to discuss a digital service for my business.'}
+                {selectedServiceProfile
+                  ? `${selectedServiceProfile.title}${getServicePriceLabel(selectedServiceProfile) ? ` - ${getServicePriceLabel(selectedServiceProfile)}` : ''}`
+                  : 'Digital Solutions'}
               </p>
             </div>
             <a

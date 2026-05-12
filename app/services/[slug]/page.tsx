@@ -30,7 +30,7 @@ import {
 } from '@/lib/seo';
 import { toMetadataImageUrl } from '@/lib/image-display';
 import { getAgencyServiceBySlug } from '@/lib/server/agency-services';
-import { buildServiceWhatsAppUrl } from '@/lib/service-whatsapp';
+import { buildServiceWhatsAppUrl, getServicePriceLabel } from '@/lib/service-whatsapp';
 
 type PageParams = { slug: string };
 
@@ -146,7 +146,7 @@ export default async function ServiceDetailPage({
   const gradient =
     service.gradient || 'linear-gradient(135deg, #FFD600 0%, #FF8C2A 48%, #111827 100%)';
   const hasCustomImage = Boolean(imageSrc && imageSrc !== '/services-card.webp');
-  const requestHref = buildServiceWhatsAppUrl(serviceTitle, serviceDescription);
+  const requestHref = buildServiceWhatsAppUrl(serviceTitle, getServicePriceLabel(service));
 
   const serviceSchema = {
     '@context': 'https://schema.org',
